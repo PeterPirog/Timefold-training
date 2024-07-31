@@ -5,10 +5,10 @@ from timefold.solver import SolverFactory
 from constraints import define_constraints  # Upewnij się, że to jest odpowiedniego typu (klasa/funkcja)
 from domain import DeviceSchedule, Device, Technician, Workstation, Timeslot
 
-def generate_problem(window_width_minutes=60):
+def generate_problem(window_width_minutes=30):
     timeslot_list = []
     start_date = datetime(2024, 7, 1)
-    end_date = datetime(2024, 7, 5)
+    end_date = datetime(2024, 7, 3)
     current_id = 1
 
     while start_date <= end_date:

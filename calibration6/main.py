@@ -2,47 +2,54 @@ from datetime import datetime, timedelta, time
 from functools import reduce
 from timefold.solver.config import SolverConfig, ScoreDirectorFactoryConfig, TerminationConfig, Duration
 from timefold.solver import SolverFactory
-from constraints import define_constraints  # Upewnij się, że to jest odpowiedniego typu (klasa/funkcja)
 from domain import DeviceSchedule, Device, Technician, Workstation, Timeslot
+from constraints import define_constraints
 
-def generate_problem(window_width_minutes=60):
+def generate_timeslots(start_date, end_date, interval_minutes):
     timeslot_list = []
-    start_date = datetime(2024, 7, 1)
-    end_date = datetime(2024, 7, 5)
     current_id = 1
 
     while start_date <= end_date:
         for hour in range(7, 15):
-            start_time = datetime.combine(start_date, time(hour, 0))
-            end_time = start_time + timedelta(minutes=window_width_minutes)
-            timeslot_list.append(Timeslot(current_id, start_date.strftime("%A"), start_time.time(), end_time.time()))
-            current_id += 1
+            for minute in range(0, 60, interval_minutes):
+                start_time = datetime.combine(start_date, time(hour, minute))
+                end_time = start_time + timedelta(minutes=interval_minutes)
+                timeslot_list.append(Timeslot(current_id, start_date.strftime("%Y-%m-%d"), start_time.time(), end_time.time()))
+                current_id += 1
         start_date += timedelta(days=1)
 
+    return timeslot_list
+
+def generate_problem():
+    start_date = datetime(2024, 7, 1)
+    end_date = datetime(2024, 7, 5)
+    interval_minutes = 10
+    timeslot_list = generate_timeslots(start_date, end_date, interval_minutes)
+
     technician_list = [
-        Technician(1, "John", {"skill1", "skill2"}),
-        Technician(2, "Doe", {"skill1"}),
-        Technician(3, "Smith", {"skill1", "skill2"})
+        Technician(1, "John", {"skill1", "skill2"}, {'2024-07-01': ('07:00', 480), '2024-07-02': ('07:00', 480), '2024-07-03': ('07:00', 480), '2024-07-04': ('07:00', 480), '2024-07-05': ('07:00', 480)}),
+        Technician(2, "Doe", {"skill1"}, {'2024-07-01': ('07:00', 480), '2024-07-02': ('07:00', 480), '2024-07-03': ('07:00', 480), '2024-07-04': ('07:00', 480), '2024-07-05': ('07:00', 480)}),
+        Technician(3, "Smith", {"skill1", "skill2"}, {'2024-07-01': ('07:00', 480), '2024-07-02': ('07:00', 480), '2024-07-03': ('07:00', 480), '2024-07-04': ('07:00', 480), '2024-07-05': ('07:00', 480)})
     ]
     workstation_list = [
-        Workstation(1, "WS1", {"type1"}),
-        Workstation(2, "WS2", {"type2"}),
-        Workstation(3, "WS3", {"type1", "type2"})
+        Workstation(1, "WS1", {"type1": 3}),
+        Workstation(2, "WS2", {"type2": 3}),
+        Workstation(3, "WS3", {"type1": 3, "type2": 3})
     ]
     device_list = [
-        Device(1, "Device1", "type1", "skill1", "SN1", "20230701"),
-        Device(2, "Device2", "type1", "skill1", "SN2", "20230702"),
-        Device(3, "Device3", "type2", "skill2", "SN3", "20230703"),
-        Device(4, "Device4", "type2", "skill2", "SN4", "20230704"),
-        Device(5, "Device5", "type2", "skill2", "SN5", "20230705"),
-        Device(6, "Device6", "type2", "skill2", "SN6", "20230706"),
-        Device(7, "Device7", "type2", "skill2", "SN7", "20230707"),
-        Device(8, "Device8", "type2", "skill2", "SN8", "20230708"),
-        Device(9, "Device9", "type2", "skill2", "SN9", "20230709"),
-        Device(10, "Device10", "type2", "skill2", "SN10", "20230710")
+        Device(1, "Device1", "type1", "skill1", "SN1", "20240701", 120),
+        Device(2, "Device2", "type1", "skill1", "SN2", "20240702", 90),
+        Device(3, "Device3", "type2", "skill2", "SN3", "20240703", 60),
+        Device(4, "Device4", "type2", "skill2", "SN4", "20240704", 45),
+        Device(5, "Device5", "type2", "skill2", "SN5", "20240705", 30),
+        Device(6, "Device6", "type2", "skill2", "SN6", 120),
+        Device(7, "Device7", "type2", "skill2", "SN7", 90),
+        Device(8, "Device8", "type2", "skill2", "SN8", 60),
+        Device(9, "Device9", "type2", "skill2", "SN9", 45),
+        Device(10, "Device10", "type2", "skill2", "SN10", 30)
     ]
-    return DeviceSchedule("schedule1", timeslot_list, technician_list, workstation_list, device_list)
 
+    return DeviceSchedule("schedule1", timeslot_list, technician_list, workstation_list, device_list)
 
 def print_schedule(schedule: DeviceSchedule):
     technician_list = schedule.technician_list
@@ -50,24 +57,12 @@ def print_schedule(schedule: DeviceSchedule):
     task_list = schedule.device_list
     slot_task_map = dict()
 
-    total_days = 0
-    completed_tasks = 0
-
     for task in task_list:
         if task.timeslot:
             timeslot_id = task.timeslot.id
             if timeslot_id not in slot_task_map:
                 slot_task_map[timeslot_id] = []
             slot_task_map[timeslot_id].append(task)
-
-            delivery_date = datetime.strptime(task.delivery_date, "%Y%m%d").date()
-            days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            first_monday = datetime(2024, 7, 1)
-            timeslot_date = first_monday + timedelta(days=days_of_week.index(task.timeslot.day_of_week))
-            total_days += (timeslot_date.date() - delivery_date).days
-            completed_tasks += 1
-
-    average_completion_time = total_days / completed_tasks if completed_tasks > 0 else 0
 
     # Print header row
     header_row = "| {:<10} |".format("Date")
@@ -79,10 +74,10 @@ def print_schedule(schedule: DeviceSchedule):
 
     for slot in schedule.timeslot_list:
         # Extract the date and time from the start_time attribute
-        start_date_time = datetime.combine(datetime(2024, 7, 1).date(), slot.start_time)
+        start_date_time = datetime.combine(datetime.strptime(slot.date, "%Y-%m-%d").date(), slot.start_time)
         date_str = start_date_time.strftime("%Y-%m-%d")
         time_str = start_date_time.strftime("%H:%M")
-        day_str = slot.day_of_week
+        day_str = slot.date
 
         # Print date
         out = "| {:<10} |".format(date_str)
@@ -165,8 +160,6 @@ def print_schedule(schedule: DeviceSchedule):
 
         print("|" + "------------|" * (len(technician_list) + 1))
 
-    print(f"Average completion time: {average_completion_time:.2f} days")
-
     unassigned_tasks = list(filter(lambda
                                        unassigned_task: unassigned_task.timeslot is None or unassigned_task.technician is None or unassigned_task.workstation is None,
                                    task_list))
@@ -184,10 +177,10 @@ solver_factory = SolverFactory.create(
         solution_class=DeviceSchedule,
         entity_class_list=[Device],
         score_director_factory_config=ScoreDirectorFactoryConfig(
-            constraint_provider_function=define_constraints  # Upewnij się, że define_constraints jest funkcją
+            constraint_provider_class=define_constraints
         ),
         termination_config=TerminationConfig(
-            spent_limit=Duration(seconds=30)  # lub Duration(seconds=30), upewnij się, że Duration jest poprawnie używane
+            spent_limit=Duration.ofSeconds(30)
         )
     )
 )
