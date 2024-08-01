@@ -1,8 +1,18 @@
-from datetime import timedelta
+"""
+Implementation of Knapsack problem from https://en.wikipedia.org/wiki/Knapsack_problem
+
+Assumptions:
+1. Each item has only oone copy
+2. One Hard constraint - maxiumum weight limit
+3. One Soft constraint - maximize value of selected items
+"""
+
 from timefold.solver import SolverFactory
 from timefold.solver.config import SolverConfig, ScoreDirectorFactoryConfig, TerminationConfig, Duration
+
 from constraints import define_constraints
 from domain import Item, SackChoice, Bagpack
+
 
 def generate_problem():
     sackchoice_list = [
@@ -11,18 +21,19 @@ def generate_problem():
     ]
 
     item_list = [
-        Item(id="Item1", value=60.0, weight=10.0, number_of_items=1),
-        Item(id="Item2", value=100.0, weight=20.0, number_of_items=1),
-        Item(id="Item3", value=120.0, weight=30.0, number_of_items=1),
-        Item(id="Item4", value=80.0, weight=40.0, number_of_items=1),
-        Item(id="Item5", value=50.0, weight=50.0, number_of_items=1),
-        Item(id="Item6", value=70.0, weight=60.0, number_of_items=1),
-        Item(id="Item7", value=90.0, weight=70.0, number_of_items=1),
-        Item(id="Item8", value=110.0, weight=80.0, number_of_items=1),
-        Item(id="Item9", value=130.0, weight=90.0, number_of_items=1),
-        Item(id="Item10", value=140.0, weight=100.0, number_of_items=1)
+        Item(id="Item1", value=60.0, weight=10.0),
+        Item(id="Item2", value=100.0, weight=20.0),
+        Item(id="Item3", value=120.0, weight=30.0),
+        Item(id="Item4", value=80.0, weight=40.0),
+        Item(id="Item5", value=50.0, weight=50.0),
+        Item(id="Item6", value=70.0, weight=60.0),
+        Item(id="Item7", value=90.0, weight=70.0),
+        Item(id="Item8", value=110.0, weight=80.0),
+        Item(id="Item9", value=130.0, weight=90.0),
+        Item(id="Item10", value=140.0, weight=100.0)
     ]
     return Bagpack("bagpack1", sackchoice_list, item_list)
+
 
 def main():
     problem = generate_problem()
@@ -45,7 +56,6 @@ def main():
 
     print_solution(solution)
 
-
 def print_solution(solution):
     total_weight = sum(item.weight for item in solution.items if item.choice and item.choice.is_selected)
     total_value = sum(item.value for item in solution.items if item.choice and item.choice.is_selected)
@@ -58,5 +68,7 @@ def print_solution(solution):
     print(f"\nTotal Weight: {total_weight}")
     print(f"Total Value: {total_value}")
 
+
 if __name__ == "__main__":
     main()
+

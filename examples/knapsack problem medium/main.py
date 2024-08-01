@@ -45,18 +45,10 @@ def main():
 
     print_solution(solution)
 
-
 def print_solution(solution):
-    total_weight = sum(item.weight for item in solution.items if item.choice and item.choice.is_selected)
-    total_value = sum(item.value for item in solution.items if item.choice and item.choice.is_selected)
-
     print("Schedule:")
     for item in solution.items:
-        selected = item.choice.is_selected if item.choice else 'N/A'
-        print(f"Item: {item.id}, Value: {item.value}, Weight: {item.weight}, Selected: {selected}")
-
-    print(f"\nTotal Weight: {total_weight}")
-    print(f"Total Value: {total_value}")
+        print(f"Item: {item.id}, Value: {item.value}, Weight: {item.weight}, Selected: {item.choice.is_selected if item.choice else 'N/A'}")
 
 if __name__ == "__main__":
     main()
