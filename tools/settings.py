@@ -1,26 +1,44 @@
 import os
 
+PROJECT_ROOT = os.path.dirname(os.path.realpath(__file__))
+
+PYTHON_32BIT_INTERPRETER = os.path.join(PROJECT_ROOT, '../venv32/Scripts/python')
+ODBC_READ_SCRIPT_PATH = os.path.join(PROJECT_ROOT, 'dbf_to_csv_transformation_32bit.py')
+CSV_FILES_PATH = os.path.join(PROJECT_ROOT, './CSV_files')
+
+# Base directory for DBF files
 LOGIS_DIRECTORY = r"D:\PycharmProjects\django-odbc\Logis"
-DATE_COLUM_LIST=['DATA_NAD','OST_SP']
+CONNECTION_STRING = 'DSN=VisualFoxProDSN;SourceDB={directory};Exclusive=No;BackgroundFetch=Yes;Collate=Machine;Null=Yes;Deleted=No;'
+DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_do_datap', 'k_do_ddata', 'k_bk_data',
+                    'k_bk_dec', 'k_bk_ddata',
+                    'k_data_sp', 'k_data_wa', 'k_data_kp', 'ostatni', 'k_data_kj', 'k_data_kz', 'k_data_spp',
+                    'k_data_spk']
+
+# Tables in the DANE and DANE_SIM directories
+DBF_TABLES_PATH_DANE = [
+    'bok', 'bok_arch', 'indexy_4', 'pers_gr', 'pers_st',
+    'ksiazka_k', 'om_zu', 'pdf_protspr', 'przyrzad_zmcbd'
+]
+# 'ksiazka_k_arch' is ignored becasue is too big for 32-bit ODBC read without chunks
+DBF_TABLES_PATH_DANE_SIM = [
+    'uzytkownik', 'osrodek_met', 'osrodek_pr', 'pyt_podstawa'
+]
 
 
-# DBF files paths
-dbf_paths={}
-dbf_paths['bok']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'bok.DBF')
-dbf_paths['bok_arch']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'bok_arch.DBF')
-dbf_paths['index_4']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'indexy_4.DBF')
-dbf_paths['pers_gr']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'pers_gr.DBF')
-dbf_paths['pers_st']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'pers_st.DBF')
-dbf_paths['ksiazka_k']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'ksiazka_k.DBF')
-dbf_paths['ksiazka_k_arch']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'ksiazka_k_arch.DBF')
-dbf_paths['om_zu']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'om_zu.DBF')
-dbf_paths['pdf_protspr']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'pdf_protspr.DBF')
-dbf_paths['przyrzad_zmcbd']=os.path.join(LOGIS_DIRECTORY, 'DANE', 'przyrzad_zmcbd.DBF')
+# DBF files paths generation
+def generate_dbf_paths(tables, directory):
+    """Generate paths for DBF files."""
+    return {table: os.path.join(directory, f"{table}.DBF") for table in tables}
 
 
-dbf_paths['uzytkownik']=os.path.join(LOGIS_DIRECTORY, 'DANE_SIM', 'uzytkownik.DBF')
-dbf_paths['osrodek_met']=os.path.join(LOGIS_DIRECTORY, 'DANE_SIM', 'osrodek_met.DBF')
-dbf_paths['osrodek_pr']=os.path.join(LOGIS_DIRECTORY, 'DANE_SIM', 'osrodek_pr.DBF')
-dbf_paths['pyt_podstawa']=os.path.join(LOGIS_DIRECTORY, 'DANE_SIM', 'pyt_podstawa.DBF')
+# Generate paths for both DANE and DANE_SIM directories
+dbf_paths_dane = generate_dbf_paths(DBF_TABLES_PATH_DANE, os.path.join(LOGIS_DIRECTORY, 'DANE'))
+dbf_paths_dane_sim = generate_dbf_paths(DBF_TABLES_PATH_DANE_SIM, os.path.join(LOGIS_DIRECTORY, 'DANE_SIM'))
 
+# Combine both path dictionaries into a single DBF_PATHS dictionary
+DBF_PATHS = {**dbf_paths_dane, **dbf_paths_dane_sim}
 
+# Example usage:
+if __name__ == "__main__":
+    for key, value in DBF_PATHS.items():
+        print(f"Table: {key}, Path: {value}")
