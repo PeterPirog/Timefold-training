@@ -2,20 +2,13 @@ import os
 
 # Instead of using relative paths, use absolute paths to the directories
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOGIS_DIRECTORY = os.path.join(PROJECT_ROOT, 'Logis')  # place for define the Logis directory with data
 PYTHON_32BIT_INTERPRETER = os.path.join(PROJECT_ROOT, 'venv32/Scripts/python')
 ODBC_READ_SCRIPT_PATH = os.path.join(PROJECT_ROOT, 'tools/dbf_to_csv_transformation_32bit.py')
 CSV_FILES_PATH = os.path.join(PROJECT_ROOT, 'tools/CSV_files')
 
-
 # Base directory for DBF files, make sure the path is valid and accessible
-LOGIS_DIRECTORY = os.path.join(PROJECT_ROOT, 'Logis') # place for define the Logis directory with data
 CONNECTION_STRING = 'DSN=VisualFoxProDSN;SourceDB={directory};Exclusive=No;BackgroundFetch=Yes;Collate=Machine;Null=Yes;Deleted=No;'
-DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_do_datap', 'k_do_ddata', 'k_bk_data',
-                    'k_bk_dec', 'k_bk_ddata',
-                    'k_data_sp', 'k_data_wa', 'k_data_kp', 'ostatni', 'k_data_kj', 'k_data_kz', 'k_data_spp',
-                    'k_data_spk']
-# Some columns with number which cshould be treat as a string not a number
-STRING_COLUMN_LIST=['indeks','ium','pr_id','st_id']
 
 # Tables in the DANE and DANE_SIM directories
 DBF_TABLES_PATH_DANE = [
@@ -26,6 +19,14 @@ DBF_TABLES_PATH_DANE = [
 DBF_TABLES_PATH_DANE_SIM = [
     'uzytkownik', 'osrodek_met', 'osrodek_pr', 'pyt_podstawa'
 ]
+
+DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_do_datap', 'k_do_ddata', 'k_bk_data',
+                    'k_bk_dec', 'k_bk_ddata',
+                    'k_data_sp', 'k_data_wa', 'k_data_kp', 'ostatni', 'k_data_kj', 'k_data_kz', 'k_data_spp',
+                    'k_data_spk', 'l_kl3', 'l_kl2', 'l_kl1', 'l_klm', 'l_ur']
+
+# Some columns with number which should be treated as a string not a number
+STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id']
 
 
 def generate_dbf_paths(tables, directory):
