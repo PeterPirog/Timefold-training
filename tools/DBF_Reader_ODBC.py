@@ -1,17 +1,18 @@
+from typing import Dict
 from subprocess import CompletedProcess, run
 from pandas import DataFrame, read_csv
 from os.path import join, splitext, basename
+from os import remove
 
 import tools.settings
 
 
 def construct_csv_path(dbase_file_path: str) -> str:
     """
-    Constructs a path for a CSV file from a given DBASE file path.
+    Constructs a CSV file path given a database file path.
 
-    :param dbase_file_path: The filepath of a DBASE file
-    :return: The constructed CSV file path
-    :raises Exception: If an error occurred while constructing the CSV file path
+    :param dbase_file_path: The database file path.
+    :return: The constructed CSV file path.
     """
     try:
         csv_file_name = splitext(basename(dbase_file_path))[0] + '.csv'
@@ -23,13 +24,12 @@ def construct_csv_path(dbase_file_path: str) -> str:
 
 def execute_odbc_script(dbase_file_path: str, python_interpreter_path: str, script_path: str) -> CompletedProcess:
     """
-    Executes an ODBC script given certain parameters.
+    Executes an ODBC script.
 
-    :param dbase_file_path: The filepath of a DBASE file
-    :param python_interpreter_path: The filepath of a Python interpreter
-    :param script_path: The filepath of a script to be executed
-    :return: The result of the executed script
-    :raises Exception: If an error occurred while executing the ODBC script
+    :param dbase_file_path: The database file path.
+    :param python_interpreter_path: The Python interpreter path.
+    :param script_path: The script path.
+    :return: The completed process.
     """
     try:
         command_parameters = [python_interpreter_path, script_path, f'dbf_file_path={dbase_file_path}']
@@ -40,37 +40,42 @@ def execute_odbc_script(dbase_file_path: str, python_interpreter_path: str, scri
 
 
 def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = tools.settings.PYTHON_32BIT_INTERPRETER,
-                     script_path: str = tools.settings.ODBC_READ_SCRIPT_PATH) -> DataFrame:
+                     script_path: str = tools.settings.ODBC_READ_SCRIPT_PATH,
+                     remove_csv_after_read: bool = True) -> DataFrame:
     """
-    Transforms a DBASE file located at a specified path to a pandas DataFrame using ODBC.
+    Parses an ODBC to a dataframe.
 
-    :param dbase_file_path: The filepath of a DBASE file
-    :param python_interpreter_path: The filepath of a Python interpreter
-    :param script_path: The filepath of an ODBC read script to be executed
-    :return: A pandas DataFrame representing the content of the DBASE file
-    :raises Exception: If an error occurred while parsing DBF to DataFrame
+    :param dbase_file_path: The database file path.
+    :param python_interpreter_path: The Python interpreter path. (Default = tools.settings.PYTHON_32BIT_INTERPRETER)
+    :param script_path: The script path. (Default = tools.settings.ODBC_READ_SCRIPT_PATH)
+    :param remove_csv_after_read: Flag to remove CSV file after reading. (Default = True)
+    :return: The parsed dataframe.
     """
     try:
         csv_file_path = construct_csv_path(dbase_file_path)
         print(f'dbase_file_path={dbase_file_path}')
+
         result = execute_odbc_script(dbase_file_path, python_interpreter_path, script_path)
         if result.returncode != 0:
             print("ODBC script execution failed with output:", result.stderr)
-        return read_csv(csv_file_path)
+
+        dtype: Dict[str, str] = {col: str for col in tools.settings.STRING_COLUMN_LIST}
+        df = read_csv(csv_file_path, dtype=dtype)
+
+        # Remove CSV file after reading if the flag is set
+        if remove_csv_after_read:
+            remove(csv_file_path)
+
+        return df
     except Exception as e:
         print("Failed to parse DBF to DataFrame:", e)
         raise
 
 
 if __name__ == '__main__':
-    """
-    A main function that provides an example of how to use parse_ODBC_to_df function.
-
-    Raises Exception - if an error occurred during the execution of the main function.
-    """
     try:
         dbase_file_path_example = r'D:\PycharmProjects\django-odbc\Logis\DANE\ksiazka_k.DBF'
-        df_example = parse_ODBC_to_df(dbase_file_path_example)
+        df_example = parse_ODBC_to_df(dbase_file_path_example, remove_csv_after_read=True)
 
         print(df_example.head())
         print(df_example.info())

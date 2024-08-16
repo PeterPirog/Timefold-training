@@ -6,24 +6,33 @@ from tools.settings import DBF_PATHS, PYTHON_32BIT_INTERPRETER, ODBC_READ_SCRIPT
 
 pd.set_option("display.max_columns", None)
 
+
 class DataLoader:
     """
-    DataLoader is a class that loads and updates data from ODBC based on keys defined in DBF_PATHS.
+    Class DataLoader automates the loading and updating of data from an ODBC datasource.
+    The class uses the keys defined in the DBF_PATHS to identify the data to be loaded.
     """
 
-    def __init__(self):
+    def __init__(self, remove_csv_after_read=True):
         """
-        DataLoader constructor. Initializes an empty dictionary for storing loaded data
-        and generates properties for all keys defined in DBF_PATHS.
+        Constructor for the DataLoader class.
+
+        Params:
+        remove_csv_after_read: boolean, if true the csv file will be deleted after data extraction.
         """
+        self.remove_csv_after_read = remove_csv_after_read
         self._loaded_data: Dict[str, DataFrame] = {}
         self._generate_properties()
 
     def _load_data_if_not_loaded(self, key: str) -> DataFrame:
         """
-        Loads data for a specific key if it hasn't been loaded yet.
-        :param key: key for which to load data.
-        :return: Loaded data as DataFrame.
+        Ensures data is loaded for a specific key if it isn't already loaded.
+
+        Params:
+        key: str, the key for the data to be loaded.
+
+        Returns:
+        Loaded DataFrame corresponding to the key.
         """
         if key not in self._loaded_data:
             self._loaded_data[key] = self._fetch_data(key)
@@ -31,17 +40,22 @@ class DataLoader:
 
     def _generate_properties(self):
         """
-        Generates a property for each key in DBF_PATHS. Each property is associated with a data load function.
+        Creates properties for each key in DBF_PATHS.
+        These properties are linked with a function to load the associated data.
         """
         for key in DBF_PATHS:
             setattr(self.__class__, key, property(lambda self, key=key: self._load_data_if_not_loaded(key)))
 
     def _format_date_columns(self, df: DataFrame, date_column_list: list) -> DataFrame:
         """
-        Formats the date columns in a DataFrame.
-        :param df: DataFrame in which to format date columns.
-        :param date_column_list: List of date columns to format.
-        :return: DataFrame with formatted date columns.
+        Formats the specified date columns in the given DataFrame.
+
+        Params:
+        df: DataFrame, the dataframe to format.
+        date_column_list: list, the list of columns that contain date values.
+
+        Returns:
+        DataFrame where the specified columns have been formatted to date format.
         """
         for column in date_column_list:
             if column in df.columns:
@@ -50,16 +64,25 @@ class DataLoader:
 
     def _fetch_data(self, key: str) -> DataFrame:
         """
-        Fetches data for a specific key using ODBC.
-        :param key: Key for which to fetch data.
-        :return: Fetched data as DataFrame.
+        Retrieves data for a given key through ODBC.
+
+        Params:
+        key: str, the key to fetch data for.
+
+        Returns:
+        DataFrame that contains fetched data based on the key.
+
+        Raises:
+        FileNotFoundError if the specified file cannot be found.
+        RuntimeError if an error occurred while fetching data.
         """
         print(f"Fetching {key} from {DBF_PATHS[key]} using ODBC...")
         try:
             df = parse_ODBC_to_df(
                 dbase_file_path=DBF_PATHS[key],
                 python_interpreter_path=PYTHON_32BIT_INTERPRETER,
-                script_path=ODBC_READ_SCRIPT_PATH
+                script_path=ODBC_READ_SCRIPT_PATH,
+                remove_csv_after_read=self.remove_csv_after_read
             )
             return self._format_date_columns(df, DATE_COLUMN_LIST)
         except FileNotFoundError:
@@ -69,7 +92,7 @@ class DataLoader:
 
     def refresh_data(self):
         """
-        Refreshes all loaded data using ODBC.
+        Updates all currently loaded data through the ODBC datasource.
         """
         for key in self._loaded_data:
             print(f"Refreshing {key} from {DBF_PATHS[key]} using ODBC...")
@@ -77,6 +100,7 @@ class DataLoader:
 
 
 if __name__ == '__main__':
+    #data_loader = DataLoader(remove_csv_after_read=True)
     data_loader = DataLoader()
 
     ksiazka_k_df: DataFrame = data_loader.ksiazka_k
