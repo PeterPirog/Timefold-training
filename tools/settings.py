@@ -13,11 +13,11 @@ CONNECTION_STRING = 'DSN=VisualFoxProDSN;SourceDB={directory};Exclusive=No;Backg
 # Tables in the DANE and DANE_SIM directories
 DBF_TABLES_PATH_DANE = [
     'bok', 'bok_arch', 'indexy_4', 'pers_gr', 'pers_st',
-    'ksiazka_k', 'om_zu', 'pdf_protspr', 'przyrzad_zmcbd'
+    'ksiazka_k', 'om_zu', 'pdf_protspr', 'przyrzad_zmcbd','ind4_om','terminy','pers_nob'
 ]
 # 'ksiazka_k_arch' is ignored becasue is too big for 32-bit ODBC read without chunks
 DBF_TABLES_PATH_DANE_SIM = [
-    'uzytkownik', 'osrodek_met', 'osrodek_pr', 'pyt_podstawa'
+    'uzytkownik', 'osrodek_met', 'osrodek_pr', 'pyt_podstawa','pers_ob'
 ]
 
 DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_do_datap', 'k_do_ddata', 'k_bk_data',
@@ -26,8 +26,8 @@ DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_
                     'k_data_spk', 'l_kl3', 'l_kl2', 'l_kl1', 'l_klm', 'l_ur']
 
 # Some columns with number which should be treated as a string not a number
-STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id']
-
+STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id','k_do_pesel', 'k_do_pin', 'k_pr_sp']
+NUMERIC_COLUMN_LIST = ['l_norma_p']
 
 def generate_dbf_paths(tables, directory):
     """Generate paths for DBF files."""
@@ -39,6 +39,9 @@ dbf_paths_dane = generate_dbf_paths(DBF_TABLES_PATH_DANE, os.path.join(LOGIS_DIR
 dbf_paths_dane_sim = generate_dbf_paths(DBF_TABLES_PATH_DANE_SIM, os.path.join(LOGIS_DIRECTORY, 'DANE_SIM'))
 
 DBF_PATHS = {**dbf_paths_dane, **dbf_paths_dane_sim}
+
+###  CONSTANTS FOR TIMEFOLD
+INDEX_PRACOWNI = '9111497111'  #index to select technician and devices from the same unit of organization
 
 # Example usage:
 if __name__ == "__main__":

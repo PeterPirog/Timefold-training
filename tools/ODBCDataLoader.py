@@ -100,9 +100,7 @@ class DataLoader:
 
 
 if __name__ == '__main__':
-    #data_loader = DataLoader(remove_csv_after_read=True)
-    data_loader = DataLoader()
-
+    data_loader = DataLoader(remove_csv_after_read=True)
     ksiazka_k_df: DataFrame = data_loader.ksiazka_k
     print(ksiazka_k_df.head())
 

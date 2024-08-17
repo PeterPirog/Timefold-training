@@ -1,5 +1,6 @@
 from typing import Dict
 from subprocess import CompletedProcess, run
+import pandas as pd
 from pandas import DataFrame, read_csv
 from os.path import join, splitext, basename
 from os import remove
@@ -62,6 +63,14 @@ def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = tools.
         dtype: Dict[str, str] = {col: str for col in tools.settings.STRING_COLUMN_LIST}
         df = read_csv(csv_file_path, dtype=dtype)
 
+        # Convert columns to float or int if it is in settings.NUMERIC_COLUMN_LIST
+        for column in tools.settings.NUMERIC_COLUMN_LIST:
+            if column in df.columns:
+                try:
+                    df[column] = pd.to_numeric(df[column])
+                except ValueError as ve:
+                    print(f"Failed to convert column {column} to numeric data type:", ve)
+
         # Remove CSV file after reading if the flag is set
         if remove_csv_after_read:
             remove(csv_file_path)
@@ -74,7 +83,7 @@ def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = tools.
 
 if __name__ == '__main__':
     try:
-        dbase_file_path_example = r'D:\PycharmProjects\django-odbc\Logis\DANE\ksiazka_k.DBF'
+        dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\pers_st.DBF'
         df_example = parse_ODBC_to_df(dbase_file_path_example, remove_csv_after_read=True)
 
         print(df_example.head())
