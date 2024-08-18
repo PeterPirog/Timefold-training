@@ -1,6 +1,8 @@
 from typing import Dict
 from subprocess import CompletedProcess, run
 import pandas as pd
+
+pd.set_option("display.max_columns", None)
 from pandas import DataFrame, read_csv
 from os.path import join, splitext, basename
 from os import remove
@@ -71,10 +73,18 @@ def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = tools.
                 except ValueError as ve:
                     print(f"Failed to convert column {column} to numeric data type:", ve)
 
+        # Convert columns to date if it is in settings.DATE_COLUMN_LIST
+        for column in tools.settings.DATE_COLUMN_LIST:
+            if column in df.columns:
+                try:
+                    df[column] = pd.to_datetime(df[column], format='%Y-%m-%d')
+                except ValueError as ve:
+                    print(f"Failed to convert column {column} to date data type:", ve)
+
         # Remove CSV file after reading if the flag is set
         if remove_csv_after_read:
             remove(csv_file_path)
-
+        df = df.drop_duplicates()
         return df
     except Exception as e:
         print("Failed to parse DBF to DataFrame:", e)
@@ -83,8 +93,8 @@ def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = tools.
 
 if __name__ == '__main__':
     try:
-        dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\pers_st.DBF'
-        df_example = parse_ODBC_to_df(dbase_file_path_example, remove_csv_after_read=True)
+        dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\bok.DBF'
+        df_example = parse_ODBC_to_df(dbase_file_path_example, remove_csv_after_read=False)
 
         print(df_example.head())
         print(df_example.info())

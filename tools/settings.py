@@ -12,7 +12,7 @@ CONNECTION_STRING = 'DSN=VisualFoxProDSN;SourceDB={directory};Exclusive=No;Backg
 
 # Tables in the DANE and DANE_SIM directories
 DBF_TABLES_PATH_DANE = [
-    'bok', 'bok_arch', 'indexy_4', 'pers_gr', 'pers_st',
+    'bok', 'bok_arch', 'indexy_4','ind4_om', 'pers_gr', 'pers_st',
     'ksiazka_k', 'om_zu', 'pdf_protspr', 'przyrzad_zmcbd','ind4_om','terminy','pers_nob'
 ]
 # 'ksiazka_k_arch' is ignored becasue is too big for 32-bit ODBC read without chunks
@@ -23,10 +23,10 @@ DBF_TABLES_PATH_DANE_SIM = [
 DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_do_datap', 'k_do_ddata', 'k_bk_data',
                     'k_bk_dec', 'k_bk_ddata',
                     'k_data_sp', 'k_data_wa', 'k_data_kp', 'ostatni', 'k_data_kj', 'k_data_kz', 'k_data_spp',
-                    'k_data_spk', 'l_kl3', 'l_kl2', 'l_kl1', 'l_klm', 'l_ur']
+                    'k_data_spk', 'l_kl3', 'l_kl2', 'l_kl1', 'l_klm', 'l_ur','u_data_p','u_data_w']
 
 # Some columns with number which should be treated as a string not a number
-STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id','k_do_pesel', 'k_do_pin', 'k_pr_sp']
+STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id','k_do_pesel', 'k_do_pin', 'k_pr_sp','p_nr_fab','u_id']
 NUMERIC_COLUMN_LIST = ['l_norma_p']
 
 def generate_dbf_paths(tables, directory):
