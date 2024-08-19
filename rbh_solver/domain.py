@@ -47,7 +47,7 @@ class Device:
     data_dostawy: str
     uzytkownik: str
     #pesel: Annotated[Union[Technician, None], PlanningVariable] = field(default=None)
-    pesel: Annotated[Technician | None, PlanningVariable] = field(default=None)
+    pesel: Annotated[Technician | None, PlanningVariable(allows_unassigned=True)] = field(default=None)
 
     def __str__(self) -> str:
         technician_str = str(self.pesel) if self.pesel else "None"
@@ -111,16 +111,19 @@ def generate_technicians(technicians: DataFrame) -> List[Technician]:
 
 
 # Function to create a technician
-def _create_technician(index: int, row: Dict) -> Technician:
+from typing import Set
+
+
+def _create_technician(index: int, row: Dict[str, Union[int, str, float, Set[str]]]) -> Technician:
     return Technician(
         id=index,
-        pesel=row['l_pesel'],
-        name=row['l_nazw_im'],
-        rbh_per_week=row['l_pr_thn'],
-        rbh_per_year=row['l_norma_p'],
-        rbh_week_plan=row['rbh_week_plan'],
-        selected_rbh=row['selected_rbh'],
-        free_rbh=row['free_rbh'],
+        pesel=str(row['l_pesel']),
+        name=str(row['l_nazw_im']),
+        rbh_per_week=int(row['l_pr_thn']),
+        rbh_per_year=float(row['l_norma_p']),
+        rbh_week_plan=float(row['rbh_week_plan']),
+        selected_rbh=float(row['selected_rbh']),
+        free_rbh=float(row['free_rbh']),
         iums=set(row['iums'])
     )
 
@@ -140,3 +143,16 @@ technicians_list = generate_technicians(technicians)
 # processing
 if __name__ == '__main__':
     print_datatables(devices_list, technicians_list)
+"""
+solution:
+Technician(id=6, name=Karbownik Joanna) total norma_rbh: 50.0
+Technician(id=11, name=Kubaczyk Krzysztof) total norma_rbh: 28.0
+Technician(id=17, name=Skoniecka Agnieszka) total norma_rbh: 24.0
+Technician(id=19, name=Szewczyk Mariusz) total norma_rbh: 28.0
+Technician(id=2, name=Fodemski Dominik) total norma_rbh: 4.0
+Technician(id=4, name=Kalinowski Jarosław) total norma_rbh: 2.0
+Technician(id=0, name=Bugaj Ireneusz) total norma_rbh: 102.0
+Technician(id=5, name=Kaliś Krzysztof) total norma_rbh: 12.5
+Technician(id=1, name=Byszewski Dariusz) total norma_rbh: 120.0
+Technician(id=10, name=Krzycholik Dariusz) total norma_rbh: 48.0
+"""
