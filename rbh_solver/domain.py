@@ -46,8 +46,8 @@ class Device:
     norma_rbh: float
     data_dostawy: str
     uzytkownik: str
-    #pesel: Annotated[Union[Technician, None], PlanningVariable] = field(default=None)
     pesel: Annotated[Technician | None, PlanningVariable(allows_unassigned=True)] = field(default=None)
+    #pesel: Annotated[Technician | None, PlanningVariable] = field(default=None)
 
     def __str__(self) -> str:
         technician_str = str(self.pesel) if self.pesel else "None"

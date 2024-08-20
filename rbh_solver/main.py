@@ -59,7 +59,7 @@ solver_factory = SolverFactory.create(
             constraint_provider_function=define_constraints
         ),
         termination_config=TerminationConfig(
-            spent_limit=Duration(seconds=30)
+            spent_limit=Duration(seconds=60)
         )
     )
 )
@@ -70,7 +70,7 @@ solver = solver_factory.build_solver()
 solver.add_event_listener(on_best_solution_change)
 
 # Generate the problem instance
-problem = generate_problem(technicians_list, devices_list)
+problem = generate_problem(technicians_list[:10], devices_list)
 
 # Solve the problem
 solution = solver.solve(problem)
