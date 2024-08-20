@@ -161,6 +161,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 /venv32/
-/tools/JSON_files/
-/tools/CSV_files/
+/optylogisdep/modules/timefold_optimizer/tools/JSON_files/
+/optylogisdep/modules/timefold_optimizer/tools/CSV_files/
 /Logis/
