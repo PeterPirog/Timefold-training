@@ -3,23 +3,19 @@ from subprocess import CompletedProcess
 from os.path import join, splitext, basename
 from os import remove
 import pandas as pd
-pd.set_option("display.max_columns", None)
 from pandas import DataFrame, read_csv
 from subprocess import run
 import os
 
 from optylogisdep.modules.timefold_optimizer.tools import settings
 
-
 def construct_csv_path(dbase_file_path: str) -> str:
     csv_file_name = splitext(basename(dbase_file_path))[0] + '.csv'
     return join(settings.CSV_FILES_PATH, csv_file_name)
 
-
 def execute_odbc_script(dbase_file_path: str, python_interpreter_path: str, script_path: str) -> CompletedProcess:
     command_parameters = [python_interpreter_path, script_path, f'dbf_file_path={dbase_file_path}']
     return run(command_parameters, capture_output=True, text=True)
-
 
 def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = settings.PYTHON_32BIT_INTERPRETER,
                      script_path: str = settings.ODBC_READ_SCRIPT_PATH,
@@ -35,13 +31,12 @@ def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = settin
 
     df = read_csv(csv_file_path, dtype=dtype)
     df = convert_columns_to_numeric(df, settings.NUMERIC_COLUMN_LIST)
-    df = convert_columns_to_date(df, settings.DATE_COLUMN_LIST)
+    df = convert_columns_to_date(df, settings.DATE_DAY_COLUMN_LIST, settings.DATE_HOUR_COLUMN_LIST)
 
     if remove_csv_after_read:
         remove(csv_file_path)
 
     return df.drop_duplicates()
-
 
 def convert_columns_to_numeric(df: DataFrame, column_list: list) -> DataFrame:
     for column in column_list:
@@ -52,16 +47,19 @@ def convert_columns_to_numeric(df: DataFrame, column_list: list) -> DataFrame:
                 print(f"Failed to convert column {column} to numeric data type:", ve)
     return df
 
-
-def convert_columns_to_date(df: DataFrame, column_list: list) -> DataFrame:
-    for column in column_list:
-        if column in df.columns:
+def convert_columns_to_date(df: DataFrame, day_column_list: list, hour_column_list: list) -> DataFrame:
+    for column in df.columns:
+        if column in day_column_list:
             try:
-                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d')
+                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d', errors='coerce')
             except ValueError as ve:
-                print(f"Failed to convert column {column} to date data type:", ve)
+                print(f"Failed to convert column {column} to date data type (day format):", ve)
+        elif column in hour_column_list:
+            try:
+                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+            except ValueError as ve:
+                print(f"Failed to convert column {column} to date data type (hour format):", ve)
     return df
-
 
 if __name__ == '__main__':
     try:

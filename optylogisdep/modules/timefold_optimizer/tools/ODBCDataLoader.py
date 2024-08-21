@@ -2,7 +2,7 @@ from typing import Dict
 import pandas as pd
 from pandas import DataFrame
 from optylogisdep.modules.timefold_optimizer.tools.DBF_Reader_ODBC import parse_ODBC_to_df
-from optylogisdep.modules.timefold_optimizer.tools.settings import DBF_PATHS, PYTHON_32BIT_INTERPRETER, ODBC_READ_SCRIPT_PATH, DATE_COLUMN_LIST
+from optylogisdep.modules.timefold_optimizer.tools.settings import DBF_PATHS, PYTHON_32BIT_INTERPRETER, ODBC_READ_SCRIPT_PATH, DATE_DAY_COLUMN_LIST, DATE_HOUR_COLUMN_LIST
 
 pd.set_option("display.max_columns", None)
 
@@ -46,20 +46,21 @@ class DataLoader:
         for key in DBF_PATHS:
             setattr(self.__class__, key, property(lambda self, key=key: self._load_data_if_not_loaded(key)))
 
-    def _format_date_columns(self, df: DataFrame, date_column_list: list) -> DataFrame:
+    def _format_date_columns(self, df: DataFrame) -> DataFrame:
         """
-        Formats the specified date columns in the given DataFrame.
+        Formats the date columns in the given DataFrame based on whether they are in the day or hour list.
 
         Params:
         df: DataFrame, the dataframe to format.
-        date_column_list: list, the list of columns that contain date values.
 
         Returns:
-        DataFrame where the specified columns have been formatted to date format.
+        DataFrame where the date columns have been formatted.
         """
-        for column in date_column_list:
-            if column in df.columns:
-                df[column] = pd.to_datetime(df[column], format="%Y-%m-%d %H:%M:%S", errors='coerce')
+        for column in df.columns:
+            if column in DATE_DAY_COLUMN_LIST:
+                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d', errors='coerce')
+            elif column in DATE_HOUR_COLUMN_LIST:
+                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         return df
 
     def _fetch_data(self, key: str) -> DataFrame:
@@ -84,7 +85,7 @@ class DataLoader:
                 script_path=ODBC_READ_SCRIPT_PATH,
                 remove_csv_after_read=self.remove_csv_after_read
             )
-            return self._format_date_columns(df, DATE_COLUMN_LIST)
+            return self._format_date_columns(df)
         except FileNotFoundError:
             raise FileNotFoundError(f"Cannot find the specified file: {DBF_PATHS[key]}")
         except Exception as e:
