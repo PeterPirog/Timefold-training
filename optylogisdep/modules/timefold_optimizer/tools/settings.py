@@ -28,7 +28,7 @@ DBF_TABLES_PATH_DANE_SIM = [
 ]
 
 DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_do_datap', 'k_do_ddata', 'k_bk_data',
-                    'k_bk_dec', 'k_bk_ddata',
+                    'k_bk_ddata',
                     'k_data_sp', 'k_data_wa', 'k_data_kp', 'ostatni', 'k_data_kj', 'k_data_kz', 'k_data_spp',
                     'k_data_spk', 'l_kl3', 'l_kl2', 'l_kl1', 'l_klm', 'l_ur','u_data_p','u_data_w']
 

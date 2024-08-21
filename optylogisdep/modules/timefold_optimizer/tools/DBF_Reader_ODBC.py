@@ -1,99 +1,71 @@
 from typing import Dict
-from subprocess import CompletedProcess, run
-import pandas as pd
-
-pd.set_option("display.max_columns", None)
-from pandas import DataFrame, read_csv
+from subprocess import CompletedProcess
 from os.path import join, splitext, basename
 from os import remove
+import pandas as pd
+pd.set_option("display.max_columns", None)
+from pandas import DataFrame, read_csv
+from subprocess import run
+import os
 
-import optylogisdep.modules.timefold_optimizer.tools.settings
+from optylogisdep.modules.timefold_optimizer.tools import settings
 
 
 def construct_csv_path(dbase_file_path: str) -> str:
-    """
-    Constructs a CSV file path given a database file path.
-
-    :param dbase_file_path: The database file path.
-    :return: The constructed CSV file path.
-    """
-    try:
-        csv_file_name = splitext(basename(dbase_file_path))[0] + '.csv'
-        return join(optylogisdep.modules.timefold_optimizer.tools.settings.CSV_FILES_PATH, csv_file_name)
-    except Exception as e:
-        print("Failed to construct CSV file path:", e)
-        raise
+    csv_file_name = splitext(basename(dbase_file_path))[0] + '.csv'
+    return join(settings.CSV_FILES_PATH, csv_file_name)
 
 
 def execute_odbc_script(dbase_file_path: str, python_interpreter_path: str, script_path: str) -> CompletedProcess:
-    """
-    Executes an ODBC script.
-
-    :param dbase_file_path: The database file path.
-    :param python_interpreter_path: The Python interpreter path.
-    :param script_path: The script path.
-    :return: The completed process.
-    """
-    try:
-        command_parameters = [python_interpreter_path, script_path, f'dbf_file_path={dbase_file_path}']
-        return run(command_parameters, capture_output=True, text=True)
-    except Exception as e:
-        print("Failed to execute ODBC script:", e)
-        raise
+    command_parameters = [python_interpreter_path, script_path, f'dbf_file_path={dbase_file_path}']
+    return run(command_parameters, capture_output=True, text=True)
 
 
-def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = optylogisdep.modules.timefold_optimizer.tools.settings.PYTHON_32BIT_INTERPRETER,
-                     script_path: str = optylogisdep.modules.timefold_optimizer.tools.settings.ODBC_READ_SCRIPT_PATH,
+def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = settings.PYTHON_32BIT_INTERPRETER,
+                     script_path: str = settings.ODBC_READ_SCRIPT_PATH,
                      remove_csv_after_read: bool = True) -> DataFrame:
-    """
-    Parses an ODBC to a dataframe.
+    csv_file_path = construct_csv_path(dbase_file_path)
+    print(f'dbase_file_path={dbase_file_path}')
 
-    :param dbase_file_path: The database file path.
-    :param python_interpreter_path: The Python interpreter path. (Default = tools.settings.PYTHON_32BIT_INTERPRETER)
-    :param script_path: The script path. (Default = tools.settings.ODBC_READ_SCRIPT_PATH)
-    :param remove_csv_after_read: Flag to remove CSV file after reading. (Default = True)
-    :return: The parsed dataframe.
-    """
-    try:
-        csv_file_path = construct_csv_path(dbase_file_path)
-        print(f'dbase_file_path={dbase_file_path}')
+    result = execute_odbc_script(dbase_file_path, python_interpreter_path, script_path)
+    if result.returncode != 0:
+        print("ODBC script execution failed with output:", result.stderr)
 
-        result = execute_odbc_script(dbase_file_path, python_interpreter_path, script_path)
-        if result.returncode != 0:
-            print("ODBC script execution failed with output:", result.stderr)
+    dtype: Dict[str, str] = {col: str for col in settings.STRING_COLUMN_LIST}
 
-        dtype: Dict[str, str] = {col: str for col in optylogisdep.modules.timefold_optimizer.tools.settings.STRING_COLUMN_LIST}
-        df = read_csv(csv_file_path, dtype=dtype)
+    df = read_csv(csv_file_path, dtype=dtype)
+    df = convert_columns_to_numeric(df, settings.NUMERIC_COLUMN_LIST)
+    df = convert_columns_to_date(df, settings.DATE_COLUMN_LIST)
 
-        # Convert columns to float or int if it is in settings.NUMERIC_COLUMN_LIST
-        for column in optylogisdep.modules.timefold_optimizer.tools.settings.NUMERIC_COLUMN_LIST:
-            if column in df.columns:
-                try:
-                    df[column] = pd.to_numeric(df[column])
-                except ValueError as ve:
-                    print(f"Failed to convert column {column} to numeric data type:", ve)
+    if remove_csv_after_read:
+        remove(csv_file_path)
 
-        # Convert columns to date if it is in settings.DATE_COLUMN_LIST
-        for column in optylogisdep.modules.timefold_optimizer.tools.settings.DATE_COLUMN_LIST:
-            if column in df.columns:
-                try:
-                    df[column] = pd.to_datetime(df[column], format='%Y-%m-%d')
-                except ValueError as ve:
-                    print(f"Failed to convert column {column} to date data type:", ve)
+    return df.drop_duplicates()
 
-        # Remove CSV file after reading if the flag is set
-        if remove_csv_after_read:
-            remove(csv_file_path)
-        df = df.drop_duplicates()
-        return df
-    except Exception as e:
-        print("Failed to parse DBF to DataFrame:", e)
-        raise
+
+def convert_columns_to_numeric(df: DataFrame, column_list: list) -> DataFrame:
+    for column in column_list:
+        if column in df.columns:
+            try:
+                df[column] = pd.to_numeric(df[column])
+            except ValueError as ve:
+                print(f"Failed to convert column {column} to numeric data type:", ve)
+    return df
+
+
+def convert_columns_to_date(df: DataFrame, column_list: list) -> DataFrame:
+    for column in column_list:
+        if column in df.columns:
+            try:
+                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d')
+            except ValueError as ve:
+                print(f"Failed to convert column {column} to date data type:", ve)
+    return df
 
 
 if __name__ == '__main__':
     try:
-        dbase_file_path_example = r'/Logis/DANE/bok.DBF'
+        dbase_file_path_example = os.path.abspath(os.path.join(settings.PROJECT_ROOT, 'Logis', 'DANE', 'bok.DBF'))
         df_example = parse_ODBC_to_df(dbase_file_path_example, remove_csv_after_read=False)
 
         print(df_example.head())

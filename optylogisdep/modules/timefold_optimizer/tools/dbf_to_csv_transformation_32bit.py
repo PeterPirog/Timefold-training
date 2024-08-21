@@ -163,6 +163,7 @@ def write_dict_list_to_csv_chunked(data_list: list[dict], csv_file_location: str
     chunk_limit : int
         The limit of chunks to write at a time, 10000 by default
     """
+
     try:
         csv_dir = os.path.dirname(csv_file_location)
         if not os.path.exists(csv_dir):

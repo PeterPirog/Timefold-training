@@ -1,5 +1,5 @@
 import pandas as pd
-from django.db import transaction
+from django.db import transaction, connection
 import os
 import sys
 from typing import Type
@@ -7,6 +7,14 @@ from django.db.models import Model
 
 # Add project root directory to sys.path
 sys.path.append('G:/PycharmProject/Timefold-training/optylogisdep')
+
+# Ensure the base directory of your project is included in sys.path
+project_base_dir = 'G:/PycharmProject/Timefold-training'
+sys.path.append(project_base_dir)
+
+# Also include the 'modules' directory directly if needed
+modules_dir = os.path.join(project_base_dir, 'optylogisdep', 'modules')
+sys.path.append(modules_dir)
 
 # Set Django settings module environment variable
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'optylogisdep.settings')
@@ -19,23 +27,21 @@ django.setup()
 # Import your Django model
 from optylogis.models import Pers_gr
 
+def reset_id_sequence():
+    with connection.cursor() as cursor:
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='optylogis_pers_gr';")
 
 def df_to_django_model(df: pd.DataFrame, DjangoModel: Type[Model]) -> None:
     with transaction.atomic():
-        for index, row in df.iterrows():
-            obj, created = DjangoModel.objects.update_or_create(
-                id=row.get('id'),
-                defaults=row.to_dict()
-            )
-            if created:
-                print(f"Created new record: {obj}")
-            else:
-                print(f"Updated existing record: {obj}")
+        DjangoModel.objects.all().delete()
+        reset_id_sequence()  # Resetowanie sekwencji ID
 
-    # Print all objects from DjangoModel after all the records have been updated/created
+        for index, row in df.iterrows():
+            obj = DjangoModel.objects.create(**row.to_dict())
+            print(f"Created new record: {obj}")
+
     for obj in DjangoModel.objects.all():
         print(obj)
-
 
 # Example usage:
 df = pd.DataFrame({
@@ -50,4 +56,37 @@ df = pd.DataFrame({
 
 df_to_django_model(df, Pers_gr)
 
-print(Pers_gr.objects.all()[0].__dict__)
+for obj in Pers_gr.objects.all():
+    print(obj.__dict__)
+
+
+
+def list_all_python_files(directory, exclude_dirs=None):
+    if exclude_dirs is None:
+        exclude_dirs = {'venv', 'venv32'}
+
+    python_files = []
+    for root, dirs, files in os.walk(directory):
+        # Remove excluded directories from traversal
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        for file in files:
+            if file.endswith('.py'):
+                full_path = os.path.join(root, file)
+                python_files.append(full_path)
+    return python_files
+
+# Example usage:
+project_directory = 'G:/PycharmProject/Timefold-training'  # Replace with your project directory
+python_files = list_all_python_files(project_directory)
+
+for file_path in python_files:
+    print(file_path)
+
+#from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
+#from modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
+from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
+
+# from timefold_optimizer.tools.ODBCDataLoader import DataLoader
+
+
+print(dir(DataLoader))
