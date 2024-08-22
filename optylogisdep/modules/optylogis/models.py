@@ -140,7 +140,7 @@ class Osrodek_met(models.Model):
         ordering = ('om_id',)
 class Ind4_om(models.Model):
     indeks = models.CharField(max_length=11, unique=True)
-    osrodek_met = models.ForeignKey('optylogis.Osrodek_met',on_delete=models.CASCADE, to_field='om_id',blank=True, null=True)
+    osrodek_met = models.ForeignKey('optylogis.Osrodek_met',on_delete=models.CASCADE, to_field='om_id')
     p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)
     p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)
     p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)

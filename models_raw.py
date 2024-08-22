@@ -1269,3 +1269,70 @@ class Uzyt_og(models.Model):
     u_met_up_n = models.CharField(max_length=15)
     u_adresat = models.CharField(max_length=48)
 
+
+def reset_id_sequence(model_name: str):
+    with connection.cursor() as cursor:
+        cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{model_name}';")
+
+
+def create_records_from_dataframe(df, model, foreign_keys=None):
+    """
+    Create database records from a given dataframe.
+
+    :param df: DataFrame to be converted into database records
+    :param model: Django Model class for the database table where records will be created
+    :param foreign_keys: A dictionary with data frame column names as keys.
+        The value for each key is a tuple, the first element is a Django Model
+        representing the foreign table (foreign_model), the second element is a string
+        representing the lookup field in the foreign table (foreign_key_lookup)
+        foreign_key_df_field: Represents the field in the dataframe which needs to be replaced with the
+        corresponding foreign key object.
+        foreign_model: The Django Model which is referenced as a foreign key.
+        foreign_key_lookup: The field in the foreign_model used for looking up the corresponding foreign key object.
+    """
+    for index, row in df.iterrows():
+        data = row.to_dict()
+
+        if foreign_keys:
+            for foreign_key_df_field, (foreign_model, foreign_key_lookup) in foreign_keys.items():
+                try:
+                    foreign_obj = foreign_model.objects.get(**{foreign_key_lookup: data[foreign_key_df_field]})
+                    # Replace the foreign key value in the data with the actual foreign object
+                    data[model._meta.get_field(foreign_key_df_field).name] = foreign_obj
+                    # Remove the original foreign key field from the data
+                    del data[foreign_key_df_field]
+                except foreign_model.DoesNotExist:
+                    print(
+                        f"No match for {foreign_key_lookup}: {data[foreign_key_df_field]} in table {model._meta.db_table}, skipping row.")
+                    continue  # Skip the current row if the foreign key does not exist
+
+        # Create a model object and save it to database
+        model.objects.create(**data)
+
+
+def print_all_records(model, verbose=False):
+    for obj in model.objects.all():
+        if verbose:
+            print(obj.__dict__)
+
+
+def df_to_django_model(df: pd.DataFrame, DjangoModel: Type[Model], foreign_keys=None, verbose=False) -> None:
+    with transaction.atomic():
+        DjangoModel.objects.all().delete()
+        reset_id_sequence(DjangoModel._meta.db_table)
+        create_records_from_dataframe(df, DjangoModel, foreign_keys)
+    print_all_records(DjangoModel, verbose)
+
+
+if __name__ == '__main__':
+    dl = DataLoader()
+
+    df_pers_st = dl.pers_st
+    df_to_django_model(df_pers_st, Pers_st, verbose=False)
+
+    df_pers_gr = dl.pers_gr
+    print(f'df_pers_st: {df_pers_st.columns}')
+    print(f'df_pers_gr: {df_pers_gr.columns}')
+
+    foreign_keys_pers_gr = {'foreign_keys': (Pers_st, 'l_pesel')}
+    df_to_django_model(df_pers_gr, Pers_gr, foreign_keys=foreign_keys_pers_gr, verbose=False)
