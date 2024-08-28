@@ -14,6 +14,7 @@ class Context(models.Model):
 class Relationship(models.Model):
     context1 = models.ForeignKey(Context, related_name='relations_through1', on_delete=models.CASCADE)
     context2 = models.ForeignKey(Context, related_name='relations_through2', on_delete=models.CASCADE)
+    context3 = models.CharField(max_length=255,null=True, blank=True)
 class Pers_st(models.Model):
     l_pesel = models.CharField(max_length=11, unique=True)
     l_nazwisko = models.CharField(max_length=30)
