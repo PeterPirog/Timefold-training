@@ -6,6 +6,14 @@ import pandas as pd
 # Create your models here.
 from django.db import models
 
+
+class Context(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)  # Pole na opis
+
+class Relationship(models.Model):
+    context1 = models.ForeignKey(Context, related_name='relations_through1', on_delete=models.CASCADE)
+    context2 = models.ForeignKey(Context, related_name='relations_through2', on_delete=models.CASCADE)
 class Pers_st(models.Model):
     l_pesel = models.CharField(max_length=11, unique=True)
     l_nazwisko = models.CharField(max_length=30)

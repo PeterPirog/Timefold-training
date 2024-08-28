@@ -46,7 +46,7 @@ def dataframe_to_django_model(df: pd.DataFrame, DjangoModel: Type[Model], field_
                 column_name = field_mapping.get(field, field) if field_mapping else field
                 if column_name in df.columns:
                     data[field] = row[column_name]
-                    print(f"Mapping column '{column_name}' to field '{field}'")
+                   # print(f"Mapping column '{column_name}' to field '{field}'")
                 else:
                     print(f"Column '{column_name}' not found in DataFrame")
 
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # Przykładowe mapowanie nazw pól modelu Django na nazwy kolumn w DataFrame
     field_mapping = {
-        'l_nazwisko': 'l_nazwisko1', # 'field_name_in_django': 'column_name_in_dataframe'
+        'l_nazwisko': 'l_nazwisko', # 'field_name_in_django': 'column_name_in_dataframe'
         # Dodaj inne mapowania w razie potrzeby
     }
 
