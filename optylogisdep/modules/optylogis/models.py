@@ -1,29 +1,8 @@
 # Create your models here.
 from django.db import models
 
-# models to run example filesclear
 
-"""
-class Context(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
-
-class NewModel(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
-
-class Relationship(models.Model):
-    context1 = models.ForeignKey(Context, related_name='relations_through1', on_delete=models.CASCADE)
-    context2 = models.ForeignKey(Context, related_name='relations_through2', on_delete=models.CASCADE)
-    context3 = models.CharField(max_length=255, null=True, blank=True)
-
-class Relationship2(models.Model):
-    context1 = models.ForeignKey(Context, related_name='relations_through1_v2', on_delete=models.CASCADE)
-    context2 = models.ForeignKey(Context, related_name='relations_through2_v2', on_delete=models.CASCADE)
-    context3 = models.CharField(max_length=255, null=True, blank=True)
-    new_field = models.ForeignKey(NewModel, related_name='relations_through_newmodel', on_delete=models.CASCADE)
-"""
-
+# models to run examples
 
 class Department(models.Model):
     """
@@ -61,7 +40,7 @@ class EmployeeAssignment(models.Model):
 
 
 ##########################################################################
-"""
+
 class Pers_st(models.Model):
     l_pesel = models.CharField(max_length=11, unique=True)
     l_nazwisko = models.CharField(max_length=30)
@@ -144,12 +123,12 @@ class Pers_st(models.Model):
     l_pr_th = models.CharField(max_length=15)
     pr_id = models.CharField(max_length=10)
 
-    class Meta:
-        ordering = ('l_nazw_im',)
+    def __str__(self):
+        return self.l_pesel
 
 
 class Pers_gr(models.Model):
-    pers_st = models.ForeignKey('optylogis.Pers_st', on_delete=models.CASCADE, to_field='l_pesel')  # Klucz obcy na pole l_pesel
+    l_pesel = models.ForeignKey(Pers_st, related_name='pers_gr_iums', on_delete=models.CASCADE)
     ium = models.CharField(max_length=6)
     nr_sw = models.CharField(max_length=12)
     data_nad = models.DateField()
@@ -157,9 +136,12 @@ class Pers_gr(models.Model):
     cof = models.BooleanField()
     ost_sp = models.DateField()
 
-    class Meta:
-        ordering = ('pers_st__l_nazw_im',)  # Sortowanie po l_nazw_im z modelu Pers_st
+    def __str__(self):
+        # Tworzymy bardziej opisową reprezentację tekstową
+        return f"{self.l_pesel.l_nazw_im} - {self.ium} - {self.nr_sw}"
 
+
+"""
 class Indexy_4(models.Model):
     indeks = models.CharField(max_length=11,unique=True)
     nazwa = models.CharField(max_length=70)

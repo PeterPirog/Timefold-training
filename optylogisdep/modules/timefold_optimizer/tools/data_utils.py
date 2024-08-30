@@ -1,5 +1,3 @@
-from typing import Optional, Dict, Any
-
 import pandas as pd
 from django.db import connection, models
 
@@ -21,6 +19,10 @@ def clear_and_reset_table(Model: models.Model) -> None:
         else:
             print(f"Manual sequence reset might be required for your database: {connection.vendor}")
     print(f"Cleared and reset index for table: {Model.__name__}\n")
+
+
+from typing import Optional, Dict, Any
+from django.db import models
 
 
 def get_related_instance(field: models.Field, value: str, row_info: Dict[str, Any]) -> Optional[models.Model]:
