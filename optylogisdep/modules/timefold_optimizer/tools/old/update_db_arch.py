@@ -1,9 +1,11 @@
 import os
 import sys
+from typing import Type, Dict, Tuple
+
 import pandas as pd
 from django.db import transaction, connection
-from typing import Type, Dict, Tuple
 from django.db.models import Model
+
 from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
@@ -15,7 +17,7 @@ import django
 
 django.setup()
 
-from optylogis.models import Pers_st, Pers_gr, Ksiazka_k
+from optylogis.models import Pers_st, Ksiazka_k
 
 
 def reset_id_sequence(model_name: str):

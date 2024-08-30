@@ -1,9 +1,11 @@
 import os
 import sys
-import pandas as pd
-from django.db import transaction, connection
 from typing import Type, Dict
+
+import pandas as pd
+from django.db import connection
 from django.db.models import Model
+
 from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
 
 # Ustawienie poprawnej ścieżki do katalogu projektu
@@ -19,7 +21,7 @@ import django
 django.setup()
 
 # Importowanie modeli Django
-from optylogis.models import Pers_st, Pers_gr, Indexy_4, Ind4_om, Osrodek_met, Ksiazka_k
+from optylogis.models import Pers_st
 
 from django.db import models
 

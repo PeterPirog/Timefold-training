@@ -7,14 +7,13 @@ from django.db import connection
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'optylogisdep.optylogisdep.settings')
 
 import django
+
 django.setup()
+
 
 def clear_and_reset_table(Model):
     """
     Usuwa wszystkie dane z tabeli modelu Django i resetuje sekwencję klucza głównego.
-
-    Args:
-        Model (models.Model): Model Django dla tabeli, którą chcesz wyczyścić i zresetować indeksy.
     """
     Model.objects.all().delete()
     with connection.cursor() as cursor:
@@ -27,16 +26,10 @@ def clear_and_reset_table(Model):
             print(f"Manual sequence reset might be required for your database: {connection.vendor}")
     print(f"Cleared and reset index for table: {Model.__name__}")
 
+
 def get_related_instance(field, value):
     """
     Pobiera instancję powiązanego modelu na podstawie klucza obcego.
-
-    Args:
-        field (models.Field): Pole modelu Django będące kluczem obcym.
-        value (str): Wartość identyfikująca rekord w powiązanej tabeli.
-
-    Returns:
-        models.Model: Instancja powiązanego modelu.
     """
     related_model = field.related_model
     try:
@@ -45,17 +38,10 @@ def get_related_instance(field, value):
         print(f"Error: No {related_model.__name__} found with name='{value}'")
         raise
 
+
 def prepare_instance_data(Model, row, column_mapping=None):
     """
     Przygotowuje dane do utworzenia lub aktualizacji instancji modelu Django.
-
-    Args:
-        Model (models.Model): Model Django, dla którego dane mają być przygotowane.
-        row (pd.Series): Wiersz danych z DataFrame.
-        column_mapping (dict): Opcjonalny słownik mapujący nazwy kolumn w DataFrame na nazwy pól w Django modelu.
-
-    Returns:
-        dict: Słownik danych do stworzenia lub aktualizacji instancji modelu.
     """
     instance_data = {}
     for field in Model._meta.get_fields():
@@ -70,19 +56,14 @@ def prepare_instance_data(Model, row, column_mapping=None):
             instance_data[field.name] = row[df_column]
     return instance_data
 
+
 def populate_table(Model, df_data, clear=False, column_mapping=None):
     """
     Zapisuje dane z DataFrame do tabeli modelu Django, obsługując klucze obce.
-
-    Args:
-        Model (models.Model): Model Django, dla którego dane mają być zapisane.
-        df_data (pd.DataFrame): DataFrame zawierający dane do zapisania w tabeli modelu.
-        clear (bool): Flaga określająca, czy usunąć wszystkie dane z tabeli przed zapisaniem nowych.
-        column_mapping (dict): Opcjonalny słownik mapujący nazwy kolumn w DataFrame na nazwy pól w Django modelu.
     """
     if clear:
         clear_and_reset_table(Model)
-        df_data.reset_index(drop=True, inplace=True)  # Resetowanie indeksów w DataFrame
+        df_data.reset_index(drop=True, inplace=True)
 
     instances = []
     for _, row in df_data.iterrows():
@@ -91,14 +72,11 @@ def populate_table(Model, df_data, clear=False, column_mapping=None):
 
     Model.objects.bulk_create(instances, ignore_conflicts=True)
 
+
 def display_model_data_as_dataframe(Model, exclude_relations=False):
     """
     Wyświetla dane z dowolnego modelu Django w formacie Pandas DataFrame,
     uwzględniając zarówno klucze obce, jak i zwykłe pola.
-
-    Args:
-        Model (models.Model): Model Django, którego dane mają zostać wyświetlone.
-        exclude_relations (bool): Flaga określająca, czy wykluczyć pola związane z relacjami.
     """
     instances = Model.objects.all() if exclude_relations else Model.objects.select_related()
     data = []
@@ -116,8 +94,9 @@ def display_model_data_as_dataframe(Model, exclude_relations=False):
         data.append(row)
 
     df = pd.DataFrame(data)
-    df.reset_index(drop=True, inplace=True)  # Resetowanie indeksów w DataFrame przed wyświetleniem
+    df.reset_index(drop=True, inplace=True)
     print(df)
+
 
 # Przykład użycia
 if __name__ == "__main__":
@@ -130,14 +109,20 @@ if __name__ == "__main__":
         'description': ['Human Resources', 'Information Technology', 'Financial Department']
     }
 
-    df_department = pd.DataFrame(data_department)
-
-    data_employee_assignment = {
-        'dept': ['HR', 'IT', 'HR'],
-        'proj': ['Project A', 'Project B', 'Project C'],
-        'role': ['Manager', 'Developer', 'Analyst'],
+    data_project = {
+        'name': ['Project Alpha', 'Project Beta', 'Project Gamma'],
+        'description': ['Alpha Project Description', 'Beta Project Description', 'Gamma Project Description']
     }
 
+    data_employee_assignment = {
+        'dept': ['HR', 'IT', 'Finance'],
+        'proj': ['Project Alpha', 'Project Beta', 'Project Alpha'],
+        'role': ['Manager', 'Developer', 'Analyst'],
+        'proj_description': ['Lead Alpha', 'Develop Beta', 'Analyze Alpha']
+    }
+
+    df_department = pd.DataFrame(data_department)
+    df_project = pd.DataFrame(data_project)
     df_employee_assignment = pd.DataFrame(data_employee_assignment)
 
     # Mapowanie kolumn DataFrame na pola Django modelu
@@ -147,24 +132,30 @@ if __name__ == "__main__":
     }
 
     project_mapping = {
-        'proj_name': 'name',
+        'name': 'name',
         'description': 'description'
     }
 
     employee_assignment_mapping = {
         'dept': 'department',
         'proj': 'project',
-        'role': 'role'
+        'role': 'role',
+        'proj_description': 'project_description'
     }
 
-    # Wyczyść i wypełnij tabelę Department, Project, oraz EmployeeAssignment, resetując indeksy
+    # Wyczyść i wypełnij tabelę Department i Project, resetując indeksy
     populate_table(Department, df_department, clear=True, column_mapping=department_mapping)
+    populate_table(Project, df_project, clear=True, column_mapping=project_mapping)
 
     # Sprawdzenie, czy dane zostały poprawnie wprowadzone (bez relacji)
     print("Dane w tabeli 'Department' (bez relacji):")
     display_model_data_as_dataframe(Department, exclude_relations=True)
 
-    populate_table(Project, df_employee_assignment, clear=True, column_mapping=employee_assignment_mapping)
+    print("Dane w tabeli 'Project' (bez relacji):")
+    display_model_data_as_dataframe(Project, exclude_relations=True)
+
+    # Wyczyść i wypełnij tabelę EmployeeAssignment, resetując indeksy
+    populate_table(EmployeeAssignment, df_employee_assignment, clear=True, column_mapping=employee_assignment_mapping)
 
     # Wyświetl dane z tabeli EmployeeAssignment
     print("Dane w tabeli 'EmployeeAssignment':")

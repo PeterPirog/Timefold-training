@@ -1,20 +1,67 @@
-from django.core.management import call_command
-from django.db import models, connection
-import pandas as pd
-
-
 # Create your models here.
 from django.db import models
 
+# models to run example filesclear
 
+"""
 class Context(models.Model):
     name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)  # Pole na opis
+    description = models.TextField(null=True, blank=True)
+
+class NewModel(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
 
 class Relationship(models.Model):
     context1 = models.ForeignKey(Context, related_name='relations_through1', on_delete=models.CASCADE)
     context2 = models.ForeignKey(Context, related_name='relations_through2', on_delete=models.CASCADE)
-    context3 = models.CharField(max_length=255,null=True, blank=True)
+    context3 = models.CharField(max_length=255, null=True, blank=True)
+
+class Relationship2(models.Model):
+    context1 = models.ForeignKey(Context, related_name='relations_through1_v2', on_delete=models.CASCADE)
+    context2 = models.ForeignKey(Context, related_name='relations_through2_v2', on_delete=models.CASCADE)
+    context3 = models.CharField(max_length=255, null=True, blank=True)
+    new_field = models.ForeignKey(NewModel, related_name='relations_through_newmodel', on_delete=models.CASCADE)
+"""
+
+
+class Department(models.Model):
+    """
+    Model reprezentujący departament w organizacji.
+    """
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Project(models.Model):
+    """
+    Model reprezentujący projekt w organizacji.
+    """
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class EmployeeAssignment(models.Model):
+    """
+    Model reprezentujący przypisanie pracownika do projektu w danym departamencie.
+    """
+    department = models.ForeignKey(Department, related_name='employee_assignments', on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, related_name='employee_assignments', on_delete=models.CASCADE)
+    role = models.CharField(max_length=255, null=True, blank=True)
+    project_description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.department.name} - {self.project.name} - {self.role}"
+
+
+##########################################################################
+"""
 class Pers_st(models.Model):
     l_pesel = models.CharField(max_length=11, unique=True)
     l_nazwisko = models.CharField(max_length=30)
@@ -239,3 +286,4 @@ class Ksiazka_k(models.Model):
 
     class Meta:
         ordering = ('k_pr_sp_nr',)
+"""

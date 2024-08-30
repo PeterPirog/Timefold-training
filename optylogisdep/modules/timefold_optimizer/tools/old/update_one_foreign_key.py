@@ -1,10 +1,12 @@
 import os
 import sys
+from typing import Type, Dict
+
 import pandas as pd
 from django.db import connection
-from typing import Type, Dict
-from django.db.models import Model
 from django.db import models
+from django.db.models import Model
+
 from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
 
 # Ustawienie poprawnej ścieżki do katalogu projektu
@@ -20,7 +22,8 @@ import django
 django.setup()
 
 # Importowanie modeli Django
-from optylogis.models import Pers_st, Pers_gr, Indexy_4, Ind4_om, Osrodek_met, Ksiazka_k
+from optylogis.models import Pers_st, Pers_gr, Indexy_4, Ind4_om, Osrodek_met
+
 
 def reset_id_sequence(model_name: str):
     with connection.cursor() as cursor:
