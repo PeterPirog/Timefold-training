@@ -21,7 +21,6 @@ def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = settin
                      script_path: str = settings.ODBC_READ_SCRIPT_PATH,
                      remove_csv_after_read: bool = True) -> DataFrame:
     csv_file_path = construct_csv_path(dbase_file_path)
-    print(f'dbase_file_path={dbase_file_path}')
 
     result = execute_odbc_script(dbase_file_path, python_interpreter_path, script_path)
     if result.returncode != 0:

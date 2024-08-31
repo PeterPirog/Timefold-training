@@ -1,84 +1,90 @@
-import pandas as pd
-
-pd.set_option("display.max_columns", None)
 import os
+import pandas as pd
 from django.apps import apps
-from import_export import resources, fields
-from import_export.widgets import ForeignKeyWidget
 from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
-from tablib import Dataset
+from data_utils import create_resource_class, process_data, display_model_data_as_dataframe
 
+# Ustawienia Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'optylogisdep.optylogisdep.settings')
 import django
 
 django.setup()
 
-# Definicje modeli
-Pers_st = apps.get_model('optylogis', 'Pers_st')
-Pers_gr = apps.get_model('optylogis', 'Pers_gr')
-
-
-def get_model_fields(model):
-    return [field.name for field in model._meta.fields]
-
-
-class BaseResource(resources.ModelResource):
-    @classmethod
-    def get_fields(cls, model):
-        return get_model_fields(model)
-
-
-class PersStResource(BaseResource):
-    class Meta:
-        model = Pers_st
-        fields = BaseResource.get_fields(model)
-        import_id_fields = ('l_pesel',)
-
-
-class PersGrResource(BaseResource):
-    l_pesel = fields.Field(
-        column_name='l_pesel',
-        attribute='l_pesel',
-        widget=ForeignKeyWidget(Pers_st, 'l_pesel')
-    )
-
-    class Meta:
-        model = Pers_gr
-        fields = BaseResource.get_fields(model)
-        import_id_fields = ('l_pesel', 'ium')
-
-
-def verify_and_remove_missing_pesel(df_gr, df_st, key):
-    missing_pesel = df_gr[~df_gr[key].isin(df_st[key])]
-    if not missing_pesel.empty:
-        print(f"Brakujące rekordy {key} w źródłowym dataframe:")
-        print(missing_pesel)
-        df_gr = df_gr[df_gr[key].isin(df_st[key])]
-    return df_gr
-
-
-def load_data(resource_class, df):
-    resource = resource_class()
-    dataset = Dataset().load(df.to_csv(index=False), format='csv')
-    result = resource.import_data(dataset, raise_errors=True, dry_run=False)
-    return result
-
-
-def process_data(df, df_ref, resource_class, key):
-    df = verify_and_remove_missing_pesel(df, df_ref, key)
-    result = load_data(resource_class, df)
-    return result
-
-
 if __name__ == "__main__":
     dl = DataLoader()
+    verbose = False
 
+    # Pobranie modeli Django
+    Pers_st = apps.get_model('optylogis', 'Pers_st')
+    Pers_gr = apps.get_model('optylogis', 'Pers_gr')
+    Indexy_4 = apps.get_model('optylogis', 'Indexy_4')
+    Osrodek_met = apps.get_model('optylogis', 'Osrodek_met')
+    Ind4_om = apps.get_model('optylogis', 'Ind4_om')
+    Uzytkownik = apps.get_model('optylogis', 'Uzytkownik')
+
+    # Przykład z modelem Pers_st
     df_Pers_st = dl.pers_st
-    print(df_Pers_st)
-    result_st = load_data(PersStResource, df_Pers_st)
+    if verbose: print(df_Pers_st)
+    result_st = process_data(df_Pers_st, model=Pers_st)
 
+    # Przykład z modelem Pers_gr
     df_Pers_gr = dl.pers_gr
-    print(df_Pers_gr.head())
-    print(df_Pers_gr.columns)
+    pers_gr_foreign_keys = {'l_pesel': (Pers_st, 'l_pesel')}
+    df_ref_dict = {Pers_st: df_Pers_st}
+    if verbose: print(df_Pers_gr.head())
+    result_gr = process_data(df_Pers_gr, df_ref_dict=df_ref_dict, model=Pers_gr, foreign_keys=pers_gr_foreign_keys)
 
-    result_gr = process_data(df_Pers_gr, df_Pers_st, PersGrResource, 'l_pesel')
+    # Przykład z modelem Indexy_4
+    df_Indexy_4 = dl.indexy_4
+    if verbose: print(df_Indexy_4)
+    result_st = process_data(df_Indexy_4, model=Indexy_4)
+
+    # Przykład z modelem Osrodek_met
+    df_Osrodek_met = dl.osrodek_met
+    if verbose: print(df_Osrodek_met)
+    result_st = process_data(df_Osrodek_met, model=Osrodek_met)
+
+    # Przykład z modelem Ind4_om
+    df_Ind4_om = dl.ind4_om
+    ind4_om_foreign_keys = {
+        'indeks': (Indexy_4, 'indeks'),
+        'om_id': (Osrodek_met, 'om_id')
+    }
+    df_ref_dict = {
+        Indexy_4: df_Indexy_4,
+        Osrodek_met: df_Osrodek_met
+    }
+    if verbose: print(df_Ind4_om)
+    result_st = process_data(df_Ind4_om, df_ref_dict=df_ref_dict, model=Ind4_om, foreign_keys=ind4_om_foreign_keys)
+
+    # Przykład z modelem Ind4_om
+    df_Uzytkownik = dl.uzytkownik
+    uzytkownik_foreign_keys = {
+        'om_id': (Osrodek_met, 'om_id')
+    }
+    df_ref_dict = {
+        Osrodek_met: df_Osrodek_met
+    }
+    if verbose: print(df_Uzytkownik)
+    result_st = process_data(df_Uzytkownik, df_ref_dict=df_ref_dict, model=Uzytkownik,
+                             foreign_keys=uzytkownik_foreign_keys)
+
+    #########################
+
+    # Wyświetlanie danych z modelu Pers_st jako DataFrame
+    if verbose: display_model_data_as_dataframe(Pers_st)
+
+    # Wyświetlanie danych z modelu Pers_gr jako DataFrame
+    if verbose: display_model_data_as_dataframe(Pers_gr)
+
+    # Wyświetlanie danych z modelu Indexy_4 jako DataFrame
+    if verbose: display_model_data_as_dataframe(Indexy_4)
+
+    # Wyświetlanie danych z modelu Osrodek_met jako DataFrame
+    if verbose: display_model_data_as_dataframe(Osrodek_met)
+
+    # Wyświetlanie danych z modelu Ind4_om jako DataFrame
+    if verbose: display_model_data_as_dataframe(Ind4_om)
+
+    # Wyświetlanie danych z modelu Ind4_om jako DataFrame
+    display_model_data_as_dataframe(Uzytkownik)

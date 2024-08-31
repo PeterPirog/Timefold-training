@@ -123,8 +123,9 @@ class Pers_st(models.Model):
     l_pr_th = models.CharField(max_length=15)
     pr_id = models.CharField(max_length=10)
 
-    def __str__(self):
-        return self.l_pesel
+    class Meta:
+        ordering = ('l_pesel',)
+
 
 
 class Pers_gr(models.Model):
@@ -136,12 +137,12 @@ class Pers_gr(models.Model):
     cof = models.BooleanField()
     ost_sp = models.DateField()
 
-    def __str__(self):
-        # Tworzymy bardziej opisową reprezentację tekstową
-        return f"{self.l_pesel.l_nazw_im} - {self.ium} - {self.nr_sw}"
+    #def __str__(self):
+    #    # Tworzymy bardziej opisową reprezentację tekstową
+    #    return f"{self.l_pesel.l_nazw_im} - {self.ium} - {self.nr_sw}"
 
 
-"""
+
 class Indexy_4(models.Model):
     indeks = models.CharField(max_length=11,unique=True)
     nazwa = models.CharField(max_length=70)
@@ -159,6 +160,8 @@ class Indexy_4(models.Model):
 
     class Meta:
         ordering = ('indeks',)
+
+
 class Osrodek_met(models.Model):
     om_id = models.CharField(max_length=7,unique=True,null=False)
     om_nazwa_p = models.CharField(max_length=50)
@@ -168,18 +171,19 @@ class Osrodek_met(models.Model):
     om_ulica = models.CharField(max_length=40)
     om_fax = models.CharField(max_length=35)
     ind_rek = models.CharField(max_length=17)
-    ind_poczta = models.BooleanField()  # Zmienione na BooleanField, ponieważ w danych jest to pole logiczne
-    om_is_wom = models.BooleanField()  # Zmienione na BooleanField, ponieważ w danych jest to pole logiczne
+    ind_poczta = models.BooleanField()
+    om_is_wom = models.BooleanField()
     om_tel = models.CharField(max_length=11)
     om_email = models.CharField(max_length=16)
     om_www = models.CharField(max_length=35)
 
     class Meta:
         ordering = ('om_id',)
+
+
 class Ind4_om(models.Model):
-    indeks = models.CharField(max_length=11, unique=True)
-    #osrodek_met = models.ForeignKey('optylogis.Osrodek_met',on_delete=models.CASCADE, to_field='om_id',default=None)
-    om_id = models.CharField(max_length=7,default=None)
+    indeks = models.ForeignKey(Indexy_4, related_name='om_customized_norms_indexes', on_delete=models.CASCADE)
+    om_id = models.ForeignKey(Osrodek_met, related_name='om_customized_norms', on_delete=models.CASCADE)
     p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)
     p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)
     p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)
@@ -193,7 +197,32 @@ class Ind4_om(models.Model):
     class Meta:
         ordering = ('indeks',)
 
-from django.db import models
+class Uzytkownik(models.Model):
+    sz_ind = models.CharField(max_length=8)  # Indeks (prawdopodobnie nieunikalny)
+    u_id = models.CharField(max_length=7, unique=True)  # ID użytkownika, klucz główny
+    u_nazwa_s = models.CharField(max_length=12)  # Skrócona nazwa użytkownika
+    u_nazwa_p = models.CharField(max_length=48)  # Pełna nazwa użytkownika
+    u_kod_p = models.CharField(max_length=6)  # Kod pocztowy
+    u_miasto = models.CharField(max_length=30)  # Miejscowość
+    u_ulica = models.CharField(max_length=40)  # Ulica
+    u_krypt = models.CharField(max_length=20)  # Kryptonim
+    u_fax = models.CharField(max_length=20)  # Fax
+    u_metro = models.CharField(max_length=30)  # Metryka
+    u_metro_te = models.CharField(max_length=20)  # Metryka techniczna
+    u_szef = models.CharField(max_length=30)  # Szef
+    u_szef_t = models.CharField(max_length=20)  # Tytuł szefa
+    u_techn = models.CharField(max_length=30)  # Techniczny
+    u_techn_t = models.CharField(max_length=20)  # Tytuł technicznego
+    ind_rek = models.CharField(max_length=17)  # Indeks rekordu
+    om_id = models.ForeignKey(Osrodek_met, related_name='om_users', on_delete=models.CASCADE)  # Identyfikator ośrodka
+    u_adresat = models.CharField(max_length=48)  # Adresat
+    u_metro_et = models.BooleanField()  # Etykieta metryczna (prawdopodobnie boolean)
+    u_met_up_n = models.CharField(max_length=15)  # Metryka uzupełniająca
+
+    class Meta:
+        ordering = ('u_id',)
+
+"""
 
 class Ksiazka_k(models.Model):
     k_pr_sp_nr = models.CharField(max_length=15, unique=True)

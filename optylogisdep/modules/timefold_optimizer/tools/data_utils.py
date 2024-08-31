@@ -1,113 +1,126 @@
 import pandas as pd
-from django.db import connection, models
-
-
-def clear_and_reset_table(Model: models.Model) -> None:
-    """
-    Usuwa wszystkie dane z tabeli modelu Django i resetuje sekwencję klucza głównego.
-
-    Args:
-        Model (models.Model): Model Django dla tabeli, którą chcesz wyczyścić i zresetować indeksy.
-    """
-    Model.objects.all().delete()
-    with connection.cursor() as cursor:
-        table_name = Model._meta.db_table
-        if connection.vendor == 'postgresql':
-            cursor.execute(f"ALTER SEQUENCE {table_name}_id_seq RESTART WITH 1;")
-        elif connection.vendor == 'sqlite':
-            cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table_name}';")
-        else:
-            print(f"Manual sequence reset might be required for your database: {connection.vendor}")
-    print(f"Cleared and reset index for table: {Model.__name__}\n")
-
-
-from typing import Optional, Dict, Any
 from django.db import models
+from import_export import resources, fields
+from import_export.widgets import ForeignKeyWidget
+from tablib import Dataset
 
-
-def get_related_instance(field: models.Field, value: str, row_info: Dict[str, Any]) -> Optional[models.Model]:
+def get_model_fields(model):
     """
-    Pobiera instancję powiązanego modelu na podstawie klucza obcego.
+    Pobiera listę wszystkich pól w modelu Django.
 
     Args:
-        field (models.Field): Pole modelu Django będące kluczem obcym.
-        value (str): Wartość identyfikująca rekord w powiązanej tabeli.
-        row_info (dict): Słownik zawierający pełne informacje o wierszu, używany do wyświetlania w razie braku dopasowania.
+        model: Model Django.
 
     Returns:
-        Optional[models.Model]: Instancja powiązanego modelu lub None, jeśli rekord nie zostanie znaleziony.
+        Listę nazw pól modelu.
     """
-    related_model = field.related_model
-    try:
-        return related_model.objects.get(name=value)
-    except related_model.DoesNotExist:
-        print(f"Warning: No {related_model.__name__} found with name='{value}'. Skipping this record: {row_info}")
-        return None
+    return [field.name for field in model._meta.fields]
 
-
-def prepare_instance_data(
-        Model: models.Model,
-        row: pd.Series,
-        row_info: Dict[str, Any],
-        column_mapping: Optional[Dict[str, str]] = None
-) -> Optional[Dict[str, Any]]:
+def get_unique_field(model):
     """
-    Przygotowuje dane do utworzenia lub aktualizacji instancji modelu Django.
+    Zwraca nazwę unikalnego pola modelu (np. 'l_pesel' lub inne unikalne pole).
 
     Args:
-        Model (models.Model): Model Django, dla którego dane mają być przygotowane.
-        row (pd.Series): Wiersz danych z DataFrame.
-        row_info (dict): Pełne informacje o wierszu, używane w przypadku błędu.
-        column_mapping (dict, optional): Opcjonalny słownik mapujący nazwy kolumn w DataFrame na nazwy pól w Django modelu.
+        model: Model Django.
 
     Returns:
-        Optional[Dict[str, Any]]: Słownik danych do stworzenia lub aktualizacji instancji modelu, lub None, jeśli nie można przygotować danych.
+        Nazwa unikalnego pola.
     """
-    instance_data = {}
-    for field in Model._meta.get_fields():
-        if column_mapping and field.name in column_mapping.values():
-            df_column = next(key for key, value in column_mapping.items() if value == field.name)
-        else:
-            df_column = field.name
+    unique_fields = [field.name for field in model._meta.fields if field.unique and field.name != 'id']
+    if unique_fields:
+        return unique_fields[0]  # Zwróć pierwszy unikalny identyfikator
+    return 'id'
 
-        if field.is_relation and field.many_to_one:
-            related_instance = get_related_instance(field, row[df_column], row_info)
-            if related_instance is None:
-                return None
-            instance_data[field.name] = related_instance
-        elif df_column in row:
-            instance_data[field.name] = row[df_column]
-    return instance_data
-
-
-def populate_table(
-        Model: models.Model,
-        df_data: pd.DataFrame,
-        clear: bool = False,
-        column_mapping: Optional[Dict[str, str]] = None
-) -> None:
+def create_resource_class(model, foreign_keys=None):
     """
-    Zapisuje dane z DataFrame do tabeli modelu Django, obsługując klucze obce.
+    Tworzy dynamicznie klasę zasobu dla podanego modelu Django.
 
     Args:
-        Model (models.Model): Model Django, dla którego dane mają być zapisane.
-        df_data (pd.DataFrame): DataFrame zawierający dane do zapisania w tabeli modelu.
-        clear (bool, optional): Flaga określająca, czy usunąć wszystkie dane z tabeli przed zapisaniem nowych. Domyślnie False.
-        column_mapping (dict, optional): Opcjonalny słownik mapujący nazwy kolumn w DataFrame na nazwy pól w Django modelu.
+        model: Model Django, dla którego tworzona jest klasa zasobu.
+        foreign_keys: Słownik z nazwami pól kluczy obcych i modelami powiązanymi.
+
+    Returns:
+        Dynamicznie utworzona klasa zasobu.
     """
-    if clear:
-        clear_and_reset_table(Model)
-        df_data.reset_index(drop=True, inplace=True)
+    model_ref = model
+    unique_field = get_unique_field(model_ref)
 
-    instances = []
-    for _, row in df_data.iterrows():
-        row_info = row.to_dict()  # Zbieramy informacje o całym wierszu
-        instance_data = prepare_instance_data(Model, row, row_info, column_mapping)
-        if instance_data is not None:
-            instances.append(Model(**instance_data))
+    class Meta:
+        model = model_ref
+        fields = get_model_fields(model_ref)
+        if unique_field != 'id':
+            import_id_fields = (unique_field,)
 
-    Model.objects.bulk_create(instances, ignore_conflicts=True)
+    attrs = {'Meta': Meta}
 
+    if foreign_keys:
+        for field_name, (related_model, related_field) in foreign_keys.items():
+            attrs[field_name] = fields.Field(
+                column_name=field_name,
+                attribute=field_name,
+                widget=ForeignKeyWidget(related_model, related_field)
+            )
+
+    resource_class = type(f'{model.__name__}Resource', (resources.ModelResource,), attrs)
+    return resource_class
+
+def verify_and_remove_missing_foreign_keys(df, df_ref, key, key_name):
+    """
+    Sprawdza brakujące klucze obce w dataframe i usuwa niepasujące rekordy.
+
+    Args:
+        df: Główna tabela DataFrame.
+        df_ref: Tabela referencyjna DataFrame z wartościami kluczy obcych.
+        key: Nazwa kolumny klucza obcego w df.
+        key_name: Nazwa kolumny klucza obcego w df_ref.
+
+    Returns:
+        Zaktualizowany DataFrame bez brakujących kluczy obcych.
+    """
+    missing_keys = df[~df[key].isin(df_ref[key_name])]
+    if not missing_keys.empty:
+        print(f"Brakujące rekordy {key} w źródłowym dataframe:")
+        print(missing_keys)
+        df = df[df[key].isin(df_ref[key_name])]
+    return df
+
+def load_data(resource_class, df):
+    """
+    Ładuje dane z DataFrame do modelu Django za pomocą zasobu.
+
+    Args:
+        resource_class: Klasa zasobu do importu danych.
+        df: DataFrame do zaimportowania.
+
+    Returns:
+        Wynik importu.
+    """
+    resource = resource_class()
+    dataset = Dataset().load(df.to_csv(index=False), format='csv')
+    result = resource.import_data(dataset, raise_errors=True, dry_run=False)
+    return result
+
+def process_data(df, df_ref_dict=None, model=None, foreign_keys=None):
+    """
+    Procesuje dane z uwzględnieniem kluczy obcych i importuje je do modelu Django.
+
+    Args:
+        df: Główna tabela DataFrame.
+        df_ref_dict: Słownik zawierający DataFrame'y referencyjne dla kluczy obcych.
+        model: Model Django, do którego dane będą importowane.
+        foreign_keys: Słownik z nazwami pól kluczy obcych i modelami powiązanymi.
+
+    Returns:
+        Wynik importu.
+    """
+    if foreign_keys and df_ref_dict:
+        for fk_field, (related_model, related_field) in foreign_keys.items():
+            df_ref = df_ref_dict[related_model]
+            df = verify_and_remove_missing_foreign_keys(df, df_ref, fk_field, related_field)
+
+    resource_class = create_resource_class(model, foreign_keys)
+    result = load_data(resource_class, df)
+    return result
 
 def display_model_data_as_dataframe(Model: models.Model, exclude_relations: bool = False) -> None:
     """
@@ -128,7 +141,7 @@ def display_model_data_as_dataframe(Model: models.Model, exclude_relations: bool
                 continue
             if field.is_relation and field.many_to_one:
                 related_object = getattr(instance, field.name)
-                row[field.name] = getattr(related_object, 'name', related_object.pk) if related_object else None
+                row[field.name] = getattr(related_object, get_unique_field(field.related_model), related_object.pk) if related_object else None
             else:
                 row[field.name] = getattr(instance, field.name)
         data.append(row)

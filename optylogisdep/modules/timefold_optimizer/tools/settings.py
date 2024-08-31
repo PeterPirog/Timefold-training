@@ -35,7 +35,7 @@ DATE_DAY_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data',
 DATE_HOUR_COLUMN_LIST = []
 
 # Some columns with number which should be treated as a string not a number
-STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id','k_do_pesel', 'k_do_pin', 'k_pr_sp','p_nr_fab','u_id']
+STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id','k_do_pesel', 'k_do_pin', 'k_pr_sp','p_nr_fab','u_id','om_id']
 NUMERIC_COLUMN_LIST = ['l_norma_p']
 
 def generate_dbf_paths(tables, directory):
