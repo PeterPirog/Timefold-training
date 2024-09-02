@@ -102,11 +102,10 @@ class DataLoader:
 
 if __name__ == '__main__':
     data_loader = DataLoader(remove_csv_after_read=True)
-    ksiazka_k_df: DataFrame = data_loader.ksiazka_k
-    print(ksiazka_k_df.head())
+    #ksiazka_k_df = data_loader.ksiazka_k
+    #print(ksiazka_k_df.head())
 
-    data_loader.refresh_data()
+    pers_st_df = data_loader.pers_st
+    print(pers_st_df[['l_ur']].head())
 
-    updated_ksiazka_k_df: DataFrame = data_loader.ksiazka_k
-    print(updated_ksiazka_k_df.head())
-    print(updated_ksiazka_k_df.info())
+

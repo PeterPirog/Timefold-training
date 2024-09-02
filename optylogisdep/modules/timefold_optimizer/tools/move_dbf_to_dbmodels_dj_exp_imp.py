@@ -21,6 +21,8 @@ if __name__ == "__main__":
     Osrodek_met = apps.get_model('optylogis', 'Osrodek_met')
     Ind4_om = apps.get_model('optylogis', 'Ind4_om')
     Uzytkownik = apps.get_model('optylogis', 'Uzytkownik')
+    Osrodek_pr = apps.get_model('optylogis', 'Osrodek_pr')
+    Ksiazka_k = apps.get_model('optylogis', 'Ksiazka_k')
 
     # Przykład z modelem Pers_st
     df_Pers_st = dl.pers_st
@@ -69,6 +71,35 @@ if __name__ == "__main__":
     result_st = process_data(df_Uzytkownik, df_ref_dict=df_ref_dict, model=Uzytkownik,
                              foreign_keys=uzytkownik_foreign_keys)
 
+    # Przykład z modelem Osrodek_pr
+    df_Osrodek_pr = dl.osrodek_pr
+    if verbose: print(df_Osrodek_pr)
+    result_st = process_data(df_Osrodek_pr, model=Osrodek_pr)
+
+
+    # Przykład z modelem Ksiazka_k
+    df_Ksiazka_k = dl.ksiazka_k
+
+
+    # Definiowanie kluczy obcych dla modelu Ksiazka_k
+    ksiazka_k_foreign_keys = {
+        'pr_id': (Osrodek_pr, 'pr_id'),
+        'k_do_pesel': (Pers_st, 'l_pesel'),
+        'indeks': (Indexy_4, 'indeks')
+    }
+
+    # Tworzenie słownika referencyjnego zawierającego odpowiednie DataFrame'y
+    df_ref_dict = {
+        Osrodek_pr: df_Osrodek_pr,
+        Pers_st: df_Pers_st,
+        Indexy_4: df_Indexy_4
+    }
+
+    if verbose: print(df_Ksiazka_k.head())
+
+    # Przetwarzanie danych dla modelu Ksiazka_k
+    result_ksiazka_k = process_data(df_Ksiazka_k, df_ref_dict=df_ref_dict, model=Ksiazka_k, foreign_keys=ksiazka_k_foreign_keys)
+
     #########################
 
     # Wyświetlanie danych z modelu Pers_st jako DataFrame
@@ -86,5 +117,11 @@ if __name__ == "__main__":
     # Wyświetlanie danych z modelu Ind4_om jako DataFrame
     if verbose: display_model_data_as_dataframe(Ind4_om)
 
-    # Wyświetlanie danych z modelu Ind4_om jako DataFrame
-    display_model_data_as_dataframe(Uzytkownik)
+    # Wyświetlanie danych z modelu Uzytkownikjako DataFrame
+    if verbose: display_model_data_as_dataframe(Uzytkownik)
+
+    # Wyświetlanie danych z modelu Osrodek_pr jako DataFrame
+    if verbose: display_model_data_as_dataframe(Osrodek_pr)
+
+    # Wyświetlanie danych z modelu Ksiazka_k jako DataFrame
+    display_model_data_as_dataframe(Ksiazka_k)

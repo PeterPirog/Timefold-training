@@ -1140,31 +1140,9 @@ class Nbc(models.Model):
     kod_nbc = models.CharField(max_length=2)
     kraj = models.CharField(max_length=20)
 
-class Osrodek_met(models.Model):
-    om_id = models.CharField(max_length=7)
-    om_nazwa_p = models.CharField(max_length=50)
-    om_nazwa_s = models.CharField(max_length=6)
-    om_kod = models.CharField(max_length=6)
-    om_miasto = models.CharField(max_length=30)
-    om_ulica = models.CharField(max_length=40)
-    om_fax = models.CharField(max_length=35)
-    ind_rek = models.CharField(max_length=17)
-    ind_poczta = models.CharField(max_length=1)
-    om_is_wom = models.CharField(max_length=1)
-    om_tel = models.CharField(max_length=11)
-    om_email = models.CharField(max_length=16)
-    om_www = models.CharField(max_length=35)
 
-class Osrodek_pr(models.Model):
-    pr_id = models.CharField(max_length=10)
-    pr_nazwa_p = models.CharField(max_length=62)
-    pr_nazwa_s = models.CharField(max_length=12)
-    pr_kod = models.CharField(max_length=6)
-    pr_miasto = models.CharField(max_length=30)
-    pr_ulica = models.CharField(max_length=40)
-    pr_fax = models.CharField(max_length=35)
-    ind_rek = models.CharField(max_length=17)
-    ind_poczta = models.CharField(max_length=1)
+
+
 
 class Pers_ob(models.Model):
     l_ob_id = models.CharField(max_length=3)

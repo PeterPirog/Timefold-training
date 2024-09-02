@@ -1,5 +1,6 @@
 # Create your models here.
 from django.db import models
+from django.db.models import SET_NULL
 
 
 # models to run examples
@@ -42,259 +43,271 @@ class EmployeeAssignment(models.Model):
 ##########################################################################
 
 class Pers_st(models.Model):
-    l_pesel = models.CharField(max_length=11, unique=True)
-    l_nazwisko = models.CharField(max_length=30)
-    l_imie = models.CharField(max_length=15)
-    l_nazw_im = models.CharField(max_length=45)
-    l_login = models.CharField(max_length=45)
-    sp_id = models.CharField(max_length=3)
-    sw_id = models.CharField(max_length=3)
-    sw2_id = models.CharField(max_length=3)
+    l_pesel = models.CharField(max_length=11, unique=True)  # PESEL number
+    l_nazwisko = models.CharField(max_length=30)  # Last name
+    l_imie = models.CharField(max_length=15)  # First name
+    l_nazw_im = models.CharField(max_length=45)  # Full name (Last name + First name)
+    l_login = models.CharField(max_length=45)  # Login ID
+    sp_id = models.CharField(max_length=3)  # ID related to a specific group or section
+    sw_id = models.CharField(max_length=3)  # Additional ID
+    sw2_id = models.CharField(max_length=3)  # Secondary additional ID
     l_grupa = models.IntegerField()  # Numeric, 1 digit, no decimals
-    l_kl3 = models.DateField()  # Date format
-    swk3_id = models.CharField(max_length=3)
-    l_kl3_rozk = models.CharField(max_length=40)
-    l_kl2 = models.DateField()  # Date format
-    swk2_id = models.CharField(max_length=3)
-    l_kl2_rozk = models.CharField(max_length=40)
-    l_kl1 = models.DateField()  # Date format
-    swk1_id = models.CharField(max_length=3)
-    l_kl1_rozk = models.CharField(max_length=40)
-    l_klm = models.DateField()  # Date format
-    swkm_id = models.CharField(max_length=3)
-    l_klm_rozk = models.CharField(max_length=40)
-    st_id = models.CharField(max_length=19)
-    tyn_id = models.CharField(max_length=3)
-    l_z_pcw = models.BooleanField()  # Logical field
-    l_stopien = models.CharField(max_length=2)
-    l_2imie = models.CharField(max_length=15)
-    l_imie_o = models.CharField(max_length=15)
-    l_imie_m = models.CharField(max_length=15)
-    l_ur = models.DateField()  # Date format
-    l_m_ur = models.CharField(max_length=20)
-    l_nip = models.CharField(max_length=13)
-    l_miasto = models.CharField(max_length=20)
-    l_kod_p = models.CharField(max_length=6)
-    l_ulica = models.CharField(max_length=30)
-    l_fax = models.CharField(max_length=20)
-    l_tel_s = models.CharField(max_length=40)
-    l_tel_d = models.CharField(max_length=40)
-    l_kat_zasz = models.CharField(max_length=2)
-    l_wz = models.DecimalField(max_digits=10, decimal_places=2)
-    l_pzu = models.DecimalField(max_digits=3, decimal_places=0)
-    l_premia = models.DecimalField(max_digits=3, decimal_places=0)
-    l_pin = models.CharField(max_length=4)
-    l_foto = models.CharField(max_length=70)
-    l_podpis = models.CharField(max_length=70)
-    l_opinia = models.TextField()  # Memo field
-    l_pr_thn = models.DecimalField(max_digits=4, decimal_places=1)
-    l_pr_1 = models.BooleanField()  # Logical field
-    l_pr_1od = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_1odm = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_1do = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_1dom = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_2 = models.BooleanField()  # Logical field
-    l_pr_2od = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_2odm = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_2do = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_2dom = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_3 = models.BooleanField()  # Logical field
-    l_pr_3od = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_3odm = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_3do = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_3dom = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_4 = models.BooleanField()  # Logical field
-    l_pr_4od = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_4odm = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_4do = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_4dom = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_5 = models.BooleanField()  # Logical field
-    l_pr_5od = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_5odm = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_5do = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_5dom = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_m = models.BooleanField()  # Logical field
-    l_pr_mod = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_modm = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_mdo = models.DecimalField(max_digits=2, decimal_places=0)
-    l_pr_mdom = models.DecimalField(max_digits=2, decimal_places=0)
-    l_norma_p = models.DecimalField(max_digits=4, decimal_places=0)
-    l_status_p = models.DecimalField(max_digits=1, decimal_places=0)
-    l_pr_th = models.CharField(max_length=15)
-    pr_id = models.CharField(max_length=10)
+    l_kl3 = models.DateField(null=True, blank=True)  # Date format, related to specific classification or rank
+    swk3_id = models.CharField(max_length=3)  # ID related to l_kl3
+    l_kl3_rozk = models.CharField(max_length=40)  # Additional classification/rank information
+    l_kl2 = models.DateField(null=True, blank=True)  # Date format, related to specific classification or rank
+    swk2_id = models.CharField(max_length=3)  # ID related to l_kl2
+    l_kl2_rozk = models.CharField(max_length=40)  # Additional classification/rank information
+    l_kl1 = models.DateField(null=True, blank=True)  # Date format, related to specific classification or rank
+    swk1_id = models.CharField(max_length=3)  # ID related to l_kl1
+    l_kl1_rozk = models.CharField(max_length=40)  # Additional classification/rank information
+    l_klm = models.DateField(null=True, blank=True)  # Date format, related to specific classification or rank
+    swkm_id = models.CharField(max_length=3)  # ID related to l_klm
+    l_klm_rozk = models.CharField(max_length=40)  # Additional classification/rank information
+    st_id = models.CharField(max_length=19)  # Station ID
+    tyn_id = models.CharField(max_length=3)  # Type ID
+    l_z_pcw = models.BooleanField()  # Boolean field indicating a specific status
+    l_stopien = models.CharField(max_length=2)  # Rank or degree
+    l_2imie = models.CharField(max_length=15)  # Second name (if applicable)
+    l_imie_o = models.CharField(max_length=15)  # Father's name
+    l_imie_m = models.CharField(max_length=15)  # Mother's name
+    l_ur = models.DateField(null=True, blank=True)  # Date of birth
+    l_m_ur = models.CharField(max_length=20)  # Place of birth
+    l_nip = models.CharField(max_length=13)  # NIP (Tax Identification Number)
+    l_miasto = models.CharField(max_length=20)  # City
+    l_kod_p = models.CharField(max_length=6)  # Postal code
+    l_ulica = models.CharField(max_length=30)  # Street address
+    l_fax = models.CharField(max_length=20)  # Fax number
+    l_tel_s = models.CharField(max_length=40)  # Phone number
+    l_tel_d = models.CharField(max_length=40)  # Secondary phone number
+    l_kat_zasz = models.CharField(max_length=2)  # Category of insurance
+    l_wz = models.DecimalField(max_digits=10, decimal_places=2)  # WZ (Warehouse) or another numeric value
+    l_pzu = models.DecimalField(max_digits=3, decimal_places=0)  # PZU (insurance related)
+    l_premia = models.DecimalField(max_digits=3, decimal_places=0)  # Premium
+    l_pin = models.CharField(max_length=4)  # PIN code
+    l_foto = models.CharField(max_length=70)  # Path to photo
+    l_podpis = models.CharField(max_length=70)  # Path to signature
+    l_opinia = models.TextField()  # Opinion or remarks
+    l_pr_thn = models.DecimalField(max_digits=4, decimal_places=1)  # Standard working time in hours
+    l_pr_1 = models.BooleanField()  # Boolean field indicating a specific status (e.g., part-time)
+    l_pr_1od = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (hours)
+    l_pr_1odm = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (minutes)
+    l_pr_1do = models.DecimalField(max_digits=2, decimal_places=0)  # End time (hours)
+    l_pr_1dom = models.DecimalField(max_digits=2, decimal_places=0)  # End time (minutes)
+    l_pr_2 = models.BooleanField()  # Boolean field indicating a specific status
+    l_pr_2od = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (hours)
+    l_pr_2odm = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (minutes)
+    l_pr_2do = models.DecimalField(max_digits=2, decimal_places=0)  # End time (hours)
+    l_pr_2dom = models.DecimalField(max_digits=2, decimal_places=0)  # End time (minutes)
+    l_pr_3 = models.BooleanField()  # Boolean field indicating a specific status
+    l_pr_3od = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (hours)
+    l_pr_3odm = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (minutes)
+    l_pr_3do = models.DecimalField(max_digits=2, decimal_places=0)  # End time (hours)
+    l_pr_3dom = models.DecimalField(max_digits=2, decimal_places=0)  # End time (minutes)
+    l_pr_4 = models.BooleanField()  # Boolean field indicating a specific status
+    l_pr_4od = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (hours)
+    l_pr_4odm = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (minutes)
+    l_pr_4do = models.DecimalField(max_digits=2, decimal_places=0)  # End time (hours)
+    l_pr_4dom = models.DecimalField(max_digits=2, decimal_places=0)  # End time (minutes)
+    l_pr_5 = models.BooleanField()  # Boolean field indicating a specific status
+    l_pr_5od = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (hours)
+    l_pr_5odm = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (minutes)
+    l_pr_5do = models.DecimalField(max_digits=2, decimal_places=0)  # End time (hours)
+    l_pr_5dom = models.DecimalField(max_digits=2, decimal_places=0)  # End time (minutes)
+    l_pr_m = models.BooleanField()  # Boolean field indicating a specific status
+    l_pr_mod = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (hours)
+    l_pr_modm = models.DecimalField(max_digits=2, decimal_places=0)  # Start time (minutes)
+    l_pr_mdo = models.DecimalField(max_digits=2, decimal_places=0)  # End time (hours)
+    l_pr_mdom = models.DecimalField(max_digits=2, decimal_places=0)  # End time (minutes)
+    l_norma_p = models.DecimalField(max_digits=4, decimal_places=0)  # Norms or standards
+    l_status_p = models.DecimalField(max_digits=1, decimal_places=0)  # Status (1 digit)
+    l_pr_th = models.CharField(max_length=15)  # Working time description
+    pr_id = models.CharField(max_length=10)  # ID related to the processing center
 
     class Meta:
         ordering = ('l_pesel',)
 
 
-
 class Pers_gr(models.Model):
-    l_pesel = models.ForeignKey(Pers_st, related_name='pers_gr_iums', on_delete=models.CASCADE)
-    ium = models.CharField(max_length=6)
-    nr_sw = models.CharField(max_length=12)
-    data_nad = models.DateField()
-    zaw = models.BooleanField()
-    cof = models.BooleanField()
-    ost_sp = models.DateField()
+    l_pesel = models.ForeignKey(Pers_st, related_name='pers_gr_iums', on_delete=models.CASCADE)  # Foreign key to Pers_st
+    ium = models.CharField(max_length=6)  # IUM code
+    nr_sw = models.CharField(max_length=12)  # SW number
+    data_nad = models.DateField()  # Date of assignment
+    zaw = models.BooleanField()  # Boolean field (e.g., completed)
+    cof = models.BooleanField()  # Boolean field (e.g., revoked)
+    ost_sp = models.DateField(null=True, blank=True)  # Date of last inspection
 
-    #def __str__(self):
-    #    # Tworzymy bardziej opisową reprezentację tekstową
-    #    return f"{self.l_pesel.l_nazw_im} - {self.ium} - {self.nr_sw}"
-
+    class Meta:
+        ordering = ('l_pesel',)
 
 
 class Indexy_4(models.Model):
-    indeks = models.CharField(max_length=11,unique=True)
-    nazwa = models.CharField(max_length=70)
-    nsn = models.CharField(max_length=13)
-    p_jm = models.CharField(max_length=10)
-    p_prod = models.CharField(max_length=10)
-    p_komplet = models.TextField()  # Memo field, zmienione na TextField
-    p_tech = models.TextField()  # Memo field, zmienione na TextField
-    p_wymagani = models.TextField()  # Memo field, zmienione na TextField
-    ind_rek = models.CharField(max_length=17)
-    p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Numeric, 5 digits total, 2 decimal places
-    p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Numeric, 5 digits total, 2 decimal places
-    p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Numeric, 6 digits total, 2 decimal places
-    p_norma_u = models.DecimalField(max_digits=6, decimal_places=2)  # Numeric, 6 digits total, 2 decimal places
+    indeks = models.CharField(max_length=11, unique=True)  # Unique index code
+    nazwa = models.CharField(max_length=70)  # Name of the item
+    nsn = models.CharField(max_length=13)  # NSN (National Stock Number)
+    p_jm = models.CharField(max_length=10)  # Unit of measure
+    p_prod = models.CharField(max_length=10)  # Producer code
+    p_komplet = models.TextField()  # Completion information (Memo field)
+    p_tech = models.TextField()  # Technical description (Memo field)
+    p_wymagani = models.TextField()  # Requirements (Memo field)
+    ind_rek = models.CharField(max_length=17)  # Record index
+    p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight K
+    p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight U
+    p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Standard K
+    p_norma_u = models.DecimalField(max_digits=6, decimal_places=2)  # Standard U
 
     class Meta:
         ordering = ('indeks',)
 
 
 class Osrodek_met(models.Model):
-    om_id = models.CharField(max_length=7,unique=True,null=False)
-    om_nazwa_p = models.CharField(max_length=50)
-    om_nazwa_s = models.CharField(max_length=6)
-    om_kod = models.CharField(max_length=6)
-    om_miasto = models.CharField(max_length=30)
-    om_ulica = models.CharField(max_length=40)
-    om_fax = models.CharField(max_length=35)
-    ind_rek = models.CharField(max_length=17)
-    ind_poczta = models.BooleanField()
-    om_is_wom = models.BooleanField()
-    om_tel = models.CharField(max_length=11)
-    om_email = models.CharField(max_length=16)
-    om_www = models.CharField(max_length=35)
+    om_id = models.CharField(max_length=7, unique=True, null=False)  # Unique ID of the metrological center
+    om_nazwa_p = models.CharField(max_length=50)  # Full name of the metrological center
+    om_nazwa_s = models.CharField(max_length=6)  # Short name of the metrological center
+    om_kod = models.CharField(max_length=6)  # Code
+    om_miasto = models.CharField(max_length=30)  # City
+    om_ulica = models.CharField(max_length=40)  # Street
+    om_fax = models.CharField(max_length=35)  # Fax number
+    ind_rek = models.CharField(max_length=17)  # Record index
+    ind_poczta = models.BooleanField()  # Boolean field (Post related)
+    om_is_wom = models.BooleanField()  # Boolean field (WOM related)
+    om_tel = models.CharField(max_length=11)  # Telephone number
+    om_email = models.CharField(max_length=16)  # Email address
+    om_www = models.CharField(max_length=35)  # Website
 
     class Meta:
         ordering = ('om_id',)
 
 
 class Ind4_om(models.Model):
-    indeks = models.ForeignKey(Indexy_4, related_name='om_customized_norms_indexes', on_delete=models.CASCADE)
-    om_id = models.ForeignKey(Osrodek_met, related_name='om_customized_norms', on_delete=models.CASCADE)
-    p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)
-    p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)
-    p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)
-    p_norma_u = models.DecimalField(max_digits=6, decimal_places=2)
-    p_norma_w = models.DecimalField(max_digits=6, decimal_places=2)
-    p_metoda = models.TextField()
-    p_metodyka = models.TextField()
-    p_excel = models.TextField()
-    ind_rek = models.CharField(max_length=17)
+    indeks = models.ForeignKey(Indexy_4, related_name='om_customized_norms_indexes', on_delete=models.CASCADE)  # Foreign key to Indexy_4
+    om_id = models.ForeignKey(Osrodek_met, related_name='om_customized_norms', on_delete=models.CASCADE)  # Foreign key to Osrodek_met
+    p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight K
+    p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight U
+    p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Standard K
+    p_norma_u = models.DecimalField(max_digits=6, decimal_places=2)  # Standard U
+    p_norma_w = models.DecimalField(max_digits=6, decimal_places=2)  # Standard W
+    p_metoda = models.TextField()  # Method description
+    p_metodyka = models.TextField()  # Methodology
+    p_excel = models.TextField()  # Excel data (Memo field)
+    ind_rek = models.CharField(max_length=17)  # Record index
 
     class Meta:
         ordering = ('indeks',)
 
+
 class Uzytkownik(models.Model):
-    sz_ind = models.CharField(max_length=8)  # Indeks (prawdopodobnie nieunikalny)
-    u_id = models.CharField(max_length=7, unique=True)  # ID użytkownika, klucz główny
-    u_nazwa_s = models.CharField(max_length=12)  # Skrócona nazwa użytkownika
-    u_nazwa_p = models.CharField(max_length=48)  # Pełna nazwa użytkownika
-    u_kod_p = models.CharField(max_length=6)  # Kod pocztowy
-    u_miasto = models.CharField(max_length=30)  # Miejscowość
-    u_ulica = models.CharField(max_length=40)  # Ulica
-    u_krypt = models.CharField(max_length=20)  # Kryptonim
-    u_fax = models.CharField(max_length=20)  # Fax
-    u_metro = models.CharField(max_length=30)  # Metryka
-    u_metro_te = models.CharField(max_length=20)  # Metryka techniczna
-    u_szef = models.CharField(max_length=30)  # Szef
-    u_szef_t = models.CharField(max_length=20)  # Tytuł szefa
-    u_techn = models.CharField(max_length=30)  # Techniczny
-    u_techn_t = models.CharField(max_length=20)  # Tytuł technicznego
-    ind_rek = models.CharField(max_length=17)  # Indeks rekordu
-    om_id = models.ForeignKey(Osrodek_met, related_name='om_users', on_delete=models.CASCADE)  # Identyfikator ośrodka
-    u_adresat = models.CharField(max_length=48)  # Adresat
-    u_metro_et = models.BooleanField()  # Etykieta metryczna (prawdopodobnie boolean)
-    u_met_up_n = models.CharField(max_length=15)  # Metryka uzupełniająca
+    sz_ind = models.CharField(max_length=8)  # Index (likely not unique)
+    u_id = models.CharField(max_length=7, unique=True)  # User ID, primary key
+    u_nazwa_s = models.CharField(max_length=12)  # Short name of the user
+    u_nazwa_p = models.CharField(max_length=48)  # Full name of the user
+    u_kod_p = models.CharField(max_length=6)  # Postal code
+    u_miasto = models.CharField(max_length=30)  # City
+    u_ulica = models.CharField(max_length=40)  # Street
+    u_krypt = models.CharField(max_length=20)  # Cryptonym
+    u_fax = models.CharField(max_length=20)  # Fax number
+    u_metro = models.CharField(max_length=30)  # Metrology-related field
+    u_metro_te = models.CharField(max_length=20)  # Technical metrology field
+    u_szef = models.CharField(max_length=30)  # Manager
+    u_szef_t = models.CharField(max_length=20)  # Manager's title
+    u_techn = models.CharField(max_length=30)  # Technical contact
+    u_techn_t = models.CharField(max_length=20)  # Technical contact's title
+    ind_rek = models.CharField(max_length=17)  # Record index
+    om_id = models.ForeignKey(Osrodek_met, related_name='om_users', on_delete=models.CASCADE)  # Center ID
+    u_adresat = models.CharField(max_length=48)  # Addressee
+    u_metro_et = models.BooleanField()  # Metrology label (Boolean)
+    u_met_up_n = models.CharField(max_length=15)  # Additional metrology field
 
     class Meta:
         ordering = ('u_id',)
 
-"""
+
+class Osrodek_pr(models.Model):
+    pr_id = models.CharField(max_length=10, unique=True)  # Main center ID
+    pr_nazwa_p = models.CharField(max_length=62)  # Full name of the center
+    pr_nazwa_s = models.CharField(max_length=12)  # Short name of the center
+    pr_kod = models.CharField(max_length=6)  # Postal code
+    pr_miasto = models.CharField(max_length=30)  # City
+    pr_ulica = models.CharField(max_length=40)  # Street
+    pr_fax = models.CharField(max_length=35)  # Fax number
+    ind_rek = models.CharField(max_length=17)  # Record index
+    ind_poczta = models.BooleanField()  # Boolean field (Post related)
+
+    class Meta:
+        ordering = ('pr_id',)
+
 
 class Ksiazka_k(models.Model):
-    k_pr_sp_nr = models.CharField(max_length=15, unique=True)
-    bk_id = models.CharField(max_length=15)
-    kp_nr = models.CharField(max_length=16)
-    pr_id = models.CharField(max_length=10)
-    p_nr_fab = models.CharField(max_length=20)
-    p_typ = models.CharField(max_length=50)
-    u_nazwa_s = models.CharField(max_length=12)
-    k_do_k_n = models.CharField(max_length=1)
-    k_do_data = models.DateTimeField()
-    # Klucze obce na kolumny z PESEL-em
-    k_do_pesel = models.CharField(max_length=11) #models.ForeignKey('optylogis.Pers_st', on_delete=models.CASCADE, to_field='l_pesel', related_name='do_pesel_ksiazka')
-    k_bk_pesel = models.CharField(max_length=11) #models.ForeignKey('optylogis.Pers_st', on_delete=models.CASCADE, to_field='l_pesel', related_name='bk_pesel_ksiazka')
-    k_do_nazw = models.CharField(max_length=40)
-    k_do_datap = models.DateTimeField()
-    k_do_dec = models.CharField(max_length=40)
-    k_do_ddata = models.DateTimeField()
-    k_sk_do = models.CharField(max_length=1)
-    k_bk_data = models.DateTimeField()
-    k_bk_dec = models.CharField(max_length=40)
-    k_bk_ddata = models.DateTimeField()
-    kp_rbh_p = models.DecimalField(max_digits=10, decimal_places=2)
-    kp_rbh_n = models.DecimalField(max_digits=10, decimal_places=2)
-    k_data_sp = models.DateField()
-    k_data_wa = models.DateField()
-    k_pin_sp = models.CharField(max_length=4)
-    k_nazw_kp = models.CharField(max_length=40)
-    k_data_kp = models.DateField()
-    k_pin_kp = models.CharField(max_length=4)
-    k_stan_tk = models.BooleanField()
-    k_temp = models.DecimalField(max_digits=6, decimal_places=1)
-    k_wilgoc = models.DecimalField(max_digits=7, decimal_places=1)
-    k_cisn = models.DecimalField(max_digits=10, decimal_places=1)
-    k_nap_zas = models.DecimalField(max_digits=7, decimal_places=2)
-    k_czes_zas = models.DecimalField(max_digits=6, decimal_places=2)
-    k_pr_stron = models.DecimalField(max_digits=2, decimal_places=0)
-    kp_prace = models.TextField()
-    ostatni = models.DateTimeField()
-    k_pr_sp_po = models.CharField(max_length=60)
-    k_pr_sp_wg = models.CharField(max_length=40)
-    k_nazw_kj = models.CharField(max_length=40)
-    k_data_kj = models.DateField()
-    k_pin_kj = models.CharField(max_length=4)
-    k_nazw_kz = models.CharField(max_length=40)
-    k_data_kz = models.DateField()
-    k_pin_kz = models.CharField(max_length=4)
-    k_pr_sp_op = models.CharField(max_length=60)
-    k_pr_sp_np = models.BooleanField()
-    k_pilne = models.BooleanField()
-    k_uwagi = models.CharField(max_length=100)
-    k_zaznacz = models.BooleanField()
-    p_excel = models.CharField(max_length=255)
-    p_ind_rek = models.CharField(max_length=17)
-    u_data_p = models.DateField()
-    k_temp_k = models.DecimalField(max_digits=6, decimal_places=1)
-    k_wilgoc_k = models.DecimalField(max_digits=7, decimal_places=1)
-    k_cisn_k = models.DecimalField(max_digits=10, decimal_places=1)
-    rbh_b = models.DecimalField(max_digits=5, decimal_places=1)
-    kp_ps = models.TextField()
-    k_data_spp = models.DateField()
-    k_data_spk = models.DateField()
-    nr_sw = models.CharField(max_length=21)
-    nadzor = models.CharField(max_length=45)
-    prot_spr = models.BooleanField()
-    prot_kal = models.BooleanField()
-    prot_ogr = models.BooleanField()
-    wzor_od = models.BooleanField()
-    wzor_rob = models.BooleanField()
-    wzor_od_ro = models.BooleanField()
-    indeks = models.CharField(max_length=11)
+    k_pr_sp_nr = models.CharField(max_length=15, unique=True)  # Calibration process number
+    bk_id = models.CharField(max_length=15)  # Foreign key to BOK table
+    kp_nr = models.CharField(max_length=16)  # Protocol number
+    pr_id = models.ForeignKey(Osrodek_pr, related_name='ksiazka_k', on_delete=models.SET_NULL, null=True)  # Foreign key to Osrodek_pr
+    p_nr_fab = models.CharField(max_length=20)  # Serial number of the instrument
+    p_typ = models.CharField(max_length=50)  # Type of the instrument
+    u_nazwa_s = models.CharField(max_length=12)  # Short name of the user
+    k_do_k_n = models.CharField(max_length=1)  # Calibration decision number
+    k_do_data = models.DateTimeField(null=True, blank=True)  # Date and time when the instrument was sent for calibration
+    k_do_pesel = models.ForeignKey(Pers_st, related_name='ksiazka_k_kalibracje', on_delete=models.SET_NULL, null=True)  # PESEL of the person responsible for calibration
+    k_bk_pesel = models.CharField(max_length=11)  # PESEL of the person who took over the instrument
+    k_do_nazw = models.CharField(max_length=40)  # Last name of the person who took over the instrument
+    k_do_datap = models.DateTimeField(null=True, blank=True)  # Date and time when the instrument was taken over
+    k_do_dec = models.CharField(max_length=40)  # Decision related to the calibration
+    k_do_ddata = models.DateTimeField(null=True, blank=True)  # Date and time of the decision
+    k_sk_do = models.CharField(max_length=1)  # Additional decision information
+    k_bk_data = models.DateTimeField(null=True, blank=True)  # Date and time when the instrument was returned
+    k_bk_dec = models.CharField(max_length=40)  # Decision made after the instrument was returned
+    k_bk_ddata = models.DateTimeField(null=True, blank=True)  # Date and time of the return decision
+    kp_rbh_p = models.DecimalField(max_digits=10, decimal_places=2)  # Work hours for preparation
+    kp_rbh_n = models.DecimalField(max_digits=10, decimal_places=2)  # Work hours for the finalization
+    k_data_sp = models.DateField(null=True, blank=True)  # Date of inspection
+    k_data_wa = models.DateField(null=True, blank=True)  # Expiration date of the instrument after calibration
+    k_pin_sp = models.CharField(max_length=4)  # PIN for the inspection
+    k_nazw_kp = models.CharField(max_length=40)  # Last name of the workshop manager
+    k_data_kp = models.DateField(null=True, blank=True)  # Date of protocol signing by the workshop manager
+    k_pin_kp = models.CharField(max_length=4)  # PIN for the protocol
+    k_stan_tk = models.BooleanField()  # Technical condition (True/False)
+    k_temp = models.DecimalField(max_digits=6, decimal_places=1)  # Temperature at the time of calibration
+    k_wilgoc = models.DecimalField(max_digits=7, decimal_places=1)  # Humidity at the time of calibration
+    k_cisn = models.DecimalField(max_digits=10, decimal_places=1)  # Pressure at the time of calibration
+    k_nap_zas = models.DecimalField(max_digits=7, decimal_places=2)  # Voltage supplied during calibration
+    k_czes_zas = models.DecimalField(max_digits=6, decimal_places=2)  # Frequency supplied during calibration
+    k_pr_stron = models.DecimalField(max_digits=2, decimal_places=0)  # Number of pages in the protocol
+    kp_prace = models.TextField()  # Detailed description of the work performed
+    ostatni = models.DateTimeField(null=True, blank=True)  # Last modification date
+    k_pr_sp_po = models.CharField(max_length=60)  # Additional information on the calibration process
+    k_pr_sp_wg = models.CharField(max_length=40)  # Additional information on the calibration process
+    k_nazw_kj = models.CharField(max_length=40)  # Last name of the quality specialist
+    k_data_kj = models.DateField(null=True, blank=True)  # Date of protocol signing by the quality specialist
+    k_pin_kj = models.CharField(max_length=4)  # PIN for the quality specialist
+    k_nazw_kz = models.CharField(max_length=40)  # Last name of the plant manager
+    k_data_kz = models.DateField(null=True, blank=True)  # Date of protocol signing by the plant manager
+    k_pin_kz = models.CharField(max_length=4)  # PIN for the plant manager
+    k_pr_sp_op = models.CharField(max_length=60)  # Additional information on the calibration process
+    k_pr_sp_np = models.BooleanField()  # Boolean field for specific conditions
+    k_pilne = models.BooleanField()  # Urgent (True/False)
+    k_uwagi = models.CharField(max_length=100)  # Remarks
+    k_zaznacz = models.BooleanField()  # Marked (True/False)
+    p_excel = models.CharField(max_length=255)  # Excel-related information
+    p_ind_rek = models.CharField(max_length=17)  # Record index
+    u_data_p = models.DateField(null=True, blank=True)  # Date of acceptance into the deposit
+    k_temp_k = models.DecimalField(max_digits=6, decimal_places=1)  # Temperature of the instrument
+    k_wilgoc_k = models.DecimalField(max_digits=7, decimal_places=1)  # Humidity of the instrument
+    k_cisn_k = models.DecimalField(max_digits=10, decimal_places=1)  # Pressure of the instrument
+    rbh_b = models.DecimalField(max_digits=5, decimal_places=1)  # Work hours billed
+    kp_ps = models.TextField()  # Additional notes on the process
+    k_data_spp = models.DateField(null=True, blank=True)  # Date of starting the preparation process
+    k_data_spk = models.DateField(null=True, blank=True)  # Date of starting the final process
+    nr_sw = models.CharField(max_length=21)  # SW number
+    nadzor = models.CharField(max_length=45)  # Supervisor's name
+    prot_spr = models.BooleanField()  # Protocol for inspection (True/False)
+    prot_kal = models.BooleanField()  # Protocol for calibration (True/False)
+    prot_ogr = models.BooleanField()  # Protocol for boundary conditions (True/False)
+    wzor_od = models.BooleanField()  # Model for determination (True/False)
+    wzor_rob = models.BooleanField()  # Working model (True/False)
+    wzor_od_ro = models.BooleanField()  # Model for determination in case of revision (True/False)
+    indeks = models.ForeignKey(Indexy_4, related_name='ksiazka_k_indeks', on_delete=models.SET_NULL, null=True)  # Foreign key to Indexy_4
 
     class Meta:
         ordering = ('k_pr_sp_nr',)
+"""
 """
