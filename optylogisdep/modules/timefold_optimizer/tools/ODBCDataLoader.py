@@ -1,8 +1,9 @@
 from typing import Dict
 import pandas as pd
+pd.set_option("display.max_rows", None)
 from pandas import DataFrame
 from optylogisdep.modules.timefold_optimizer.tools.DBF_Reader_ODBC import parse_ODBC_to_df
-from optylogisdep.modules.timefold_optimizer.tools.settings import DBF_PATHS, PYTHON_32BIT_INTERPRETER, ODBC_READ_SCRIPT_PATH, DATE_DAY_COLUMN_LIST, DATE_HOUR_COLUMN_LIST
+from optylogisdep.modules.timefold_optimizer.tools.settings import DBF_PATHS, PYTHON_32BIT_INTERPRETER, ODBC_READ_SCRIPT_PATH, DATE_COLUMN_LIST, DATETIME_COLUMN_LIST
 
 pd.set_option("display.max_columns", None)
 
@@ -57,9 +58,9 @@ class DataLoader:
         DataFrame where the date columns have been formatted.
         """
         for column in df.columns:
-            if column in DATE_DAY_COLUMN_LIST:
+            if column in DATE_COLUMN_LIST:
                 df[column] = pd.to_datetime(df[column], format='%Y-%m-%d', errors='coerce')
-            elif column in DATE_HOUR_COLUMN_LIST:
+            elif column in DATETIME_COLUMN_LIST:
                 df[column] = pd.to_datetime(df[column], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         return df
 
@@ -102,10 +103,13 @@ class DataLoader:
 
 if __name__ == '__main__':
     data_loader = DataLoader(remove_csv_after_read=True)
-    #ksiazka_k_df = data_loader.ksiazka_k
-    #print(ksiazka_k_df.head())
+    # ksiazka_k_df = data_loader.ksiazka_k
+    # print(ksiazka_k_df.head())
 
-    pers_st_df = data_loader.pers_st
-    print(pers_st_df[['l_ur']].head())
+    bok_df = data_loader.bok
+    #print(bok_df.head())
+   # print(bok_df.info())
 
-
+    # Print rows in column 'bk_id' where there is a dot '.' in the string
+    dot_rows = bok_df[bok_df['bk_id'].astype(str).str.contains('2022-031BK12190')]
+    print(dot_rows)

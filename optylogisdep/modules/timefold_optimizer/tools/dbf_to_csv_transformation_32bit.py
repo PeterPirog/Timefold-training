@@ -115,7 +115,7 @@ def convert_dbf_to_dict_list(dbf_file_location: str) -> Optional[list[Dict]]:
     """
     try:
         table_name, connection_data = extract_dbf_file_details(dbf_file_location)
-        sql_code = f'SELECT * FROM {table_name}'
+        sql_code = f'SET DELETED OFF; SELECT * FROM {table_name}'
         connection_object = establish_dbf_connection(connection_data)
         with connection_object:
             extracted_data = perform_sql_query(connection_object, sql_code)

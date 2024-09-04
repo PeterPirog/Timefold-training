@@ -30,7 +30,7 @@ def parse_ODBC_to_df(dbase_file_path: str, python_interpreter_path: str = settin
 
     df = read_csv(csv_file_path, dtype=dtype)
     df = convert_columns_to_numeric(df, settings.NUMERIC_COLUMN_LIST)
-    df = convert_columns_to_date(df, settings.DATE_DAY_COLUMN_LIST, settings.DATE_HOUR_COLUMN_LIST)
+    df = convert_columns_to_date(df, settings.DATE_COLUMN_LIST, settings.DATETIME_COLUMN_LIST)
 
     if remove_csv_after_read:
         remove(csv_file_path)
@@ -48,32 +48,29 @@ def convert_columns_to_numeric(df: DataFrame, column_list: list) -> DataFrame:
 
 import pandas as pd
 
-def convert_columns_to_date(df: pd.DataFrame, day_column_list: list, hour_column_list: list) -> pd.DataFrame:
+def convert_columns_to_date(df: pd.DataFrame, date_columns_list: list, datetime_column_list: list) -> pd.DataFrame:
     for column in df.columns:
-        if column in day_column_list:
+        if column in date_columns_list:
             try:
-                # Konwersja kolumny do formatu 'YYYY-MM-DD' i dodanie godziny 00:00:00
-                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d', errors='coerce').apply(
-                    lambda x: pd.Timestamp(f"{x.date()} 00:00:00") if pd.notnull(x) else None)
+                # Konwersja do formatu 'YYYY-MM-DD'
+                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d', errors='coerce').dt.date
             except ValueError as ve:
                 print(f"Failed to convert column {column} to date data type (day format):", ve)
-        elif column in hour_column_list:
+        elif column in datetime_column_list:
             try:
-                # Konwersja kolumny do formatu 'YYYY-MM-DD HH:MM:SS'
-                df[column] = pd.to_datetime(df[column], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+                # Konwersja do formatu 'YYYY-MM-DD HH:MM:SS'
+                df[column] = pd.to_datetime(df[column], errors='coerce')
             except ValueError as ve:
-                print(f"Failed to convert column {column} to date data type (hour format YYYY-MM-DD HH:MM:SS):", ve)
-                try:
-                    # Alternatywna próba konwersji, jeśli daty są w formacie 'MM/DD/YYYY HH:MM:SS AM/PM'
-                    df[column] = pd.to_datetime(df[column], format='%m/%d/%Y %I:%M:%S %p', errors='coerce')
-                except ValueError as ve2:
-                    print(f"Failed to convert column {column} to date data type (hour format MM/DD/YYYY HH:MM:SS AM/PM):", ve2)
+                print(f"Failed to convert column {column} to date data type (datetime format):", ve)
 
-        # Zamiana NaT oraz '1899-12-30' lub '1899-12-30 00:00:00' na None
+        # Zamiana NaT na None
         df[column] = df[column].where(pd.notnull(df[column]), None)
 
-        # Zamiana konkretnej wartości '1899-12-30' i '1899-12-30 00:00:00' na None
-        df[column] = df[column].apply(lambda x: None if x == pd.Timestamp('1899-12-30 00:00:00') else x)
+        # Zamiana konkretnej wartości '1899-12-30' lub '1899-12-30 00:00:00' na None
+        if column in datetime_column_list:
+            df[column] = df[column].apply(lambda x: None if x == pd.Timestamp('1899-12-30 00:00:00') else x)
+        elif column in date_columns_list:
+            df[column] = df[column].apply(lambda x: None if x == pd.Timestamp('1899-12-30').date() else x)
 
     return df
 
@@ -95,6 +92,6 @@ if __name__ == '__main__':
 
     df = pd.DataFrame(data)
 
-    converted_df = convert_columns_to_date(df, day_column_list=['l_ur'], hour_column_list=[])
+    converted_df = convert_columns_to_date(df, date_columns_list=['l_ur'], datetime_column_list=[])
 
     print(converted_df)

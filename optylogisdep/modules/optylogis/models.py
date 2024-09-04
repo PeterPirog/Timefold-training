@@ -41,6 +41,19 @@ class EmployeeAssignment(models.Model):
 
 
 ##########################################################################
+class Osrodek_pr(models.Model):
+    pr_id = models.CharField(max_length=10, unique=True)  # Main center ID
+    pr_nazwa_p = models.CharField(max_length=62)  # Full name of the center
+    pr_nazwa_s = models.CharField(max_length=12)  # Short name of the center
+    pr_kod = models.CharField(max_length=6)  # Postal code
+    pr_miasto = models.CharField(max_length=30)  # City
+    pr_ulica = models.CharField(max_length=40)  # Street
+    pr_fax = models.CharField(max_length=35)  # Fax number
+    ind_rek = models.CharField(max_length=17)  # Record index
+    ind_poczta = models.BooleanField()  # Boolean field (Post related)
+
+    class Meta:
+        ordering = ('pr_id',)
 
 class Pers_st(models.Model):
     l_pesel = models.CharField(max_length=11, unique=True)  # PESEL number
@@ -122,24 +135,27 @@ class Pers_st(models.Model):
     l_norma_p = models.DecimalField(max_digits=4, decimal_places=0)  # Norms or standards
     l_status_p = models.DecimalField(max_digits=1, decimal_places=0)  # Status (1 digit)
     l_pr_th = models.CharField(max_length=15)  # Working time description
-    pr_id = models.CharField(max_length=10)  # ID related to the processing center
+    pr_id = models.ForeignKey(Osrodek_pr, related_name='pers_st', on_delete=models.SET_NULL,null=True)  # ID related to the processing center
 
     class Meta:
         ordering = ('l_pesel',)
 
 
 class Pers_gr(models.Model):
-    l_pesel = models.ForeignKey(Pers_st, related_name='pers_gr_iums', on_delete=models.CASCADE)  # Foreign key to Pers_st
+    l_pesel = models.ForeignKey(Pers_st, related_name='pers_gr_iums',
+                                on_delete=models.CASCADE)  # Foreign key to Pers_st
     ium = models.CharField(max_length=6)  # IUM code
     nr_sw = models.CharField(max_length=12)  # SW number
     data_nad = models.DateField()  # Date of assignment
-    zaw = models.BooleanField()  # Boolean field (e.g., completed)
-    cof = models.BooleanField()  # Boolean field (e.g., revoked)
-    ost_sp = models.DateField(null=True, blank=True)  # Date of last inspection
+    zaw = models.BooleanField()  # Boolean field (IUM hanged)
+    cof = models.BooleanField()  # Boolean field (IUM canceled)
+    ost_sp = models.DateField(null=True, blank=True)  # Date of last calibration
 
     class Meta:
         ordering = ('l_pesel',)
 
+    def __str__(self):
+        return f"{self.l_pesel.l_nazw_im},IUM: {self.ium}, SW Number: {self.nr_sw}, Date of Assignment: {self.data_nad}, Hanged: {self.zaw}, Canceled: {self.cof}, Last Calibration Date: {self.ost_sp}"
 
 class Indexy_4(models.Model):
     indeks = models.CharField(max_length=11, unique=True)  # Unique index code
@@ -180,8 +196,10 @@ class Osrodek_met(models.Model):
 
 
 class Ind4_om(models.Model):
-    indeks = models.ForeignKey(Indexy_4, related_name='om_customized_norms_indexes', on_delete=models.CASCADE)  # Foreign key to Indexy_4
-    om_id = models.ForeignKey(Osrodek_met, related_name='om_customized_norms', on_delete=models.CASCADE)  # Foreign key to Osrodek_met
+    indeks = models.ForeignKey(Indexy_4, related_name='om_customized_norms_indexes',
+                               on_delete=models.CASCADE)  # Foreign key to Indexy_4
+    om_id = models.ForeignKey(Osrodek_met, related_name='om_customized_norms',
+                              on_delete=models.CASCADE)  # Foreign key to Osrodek_met
     p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight K
     p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight U
     p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Standard K
@@ -222,33 +240,91 @@ class Uzytkownik(models.Model):
         ordering = ('u_id',)
 
 
-class Osrodek_pr(models.Model):
-    pr_id = models.CharField(max_length=10, unique=True)  # Main center ID
-    pr_nazwa_p = models.CharField(max_length=62)  # Full name of the center
-    pr_nazwa_s = models.CharField(max_length=12)  # Short name of the center
-    pr_kod = models.CharField(max_length=6)  # Postal code
-    pr_miasto = models.CharField(max_length=30)  # City
-    pr_ulica = models.CharField(max_length=40)  # Street
-    pr_fax = models.CharField(max_length=35)  # Fax number
-    ind_rek = models.CharField(max_length=17)  # Record index
-    ind_poczta = models.BooleanField()  # Boolean field (Post related)
+
+
+
+class Przyrzad_zmcbd(models.Model):
+    indeks = models.ForeignKey(Indexy_4, related_name='przyrzady', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Indexy_4
+    p_nr_fab = models.CharField(max_length=20)  # Numer fabryczny przyrządu
+    u_id = models.ForeignKey(Uzytkownik, related_name='przyrzady', on_delete=models.SET_NULL,null=True)  # Klucz obcy do modelu Uzytkownik
+    om_id = models.ForeignKey(Osrodek_met, related_name='przyrzady', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Osrodek_met
+    pr_id = models.ForeignKey(Osrodek_pr, related_name='przyrzady', on_delete=models.SET_NULL,null=True)  # Klucz obcy do modelu Osrodek_pr
+    u_data_pl = models.DateField(null=True, blank=True)  # Data planowanego przyjęcia, pole DateField
+    k_data_wa = models.DateField(null=True, blank=True)  # Data ważności, pole DateField
+    k_stan_tk = models.BooleanField(default=False)  # Stan techniczny (prawdopodobnie boolean, 'F' = False)
+    p_zm_id = models.ForeignKey(Uzytkownik, related_name='przyrzady_poprzedni_uzytkownik', on_delete=models.SET_NULL,null=True)
+    kod_ean8 = models.CharField(max_length=8)  # Kod EAN8
+    ind_rek = models.CharField(max_length=17, unique=True)  # Indeks rekordu, teraz unikatowy
+    akcept = models.BooleanField(default=False)  # Akceptacja (prawdopodobnie boolean, 'F' = False)
+    p_kal_nt = models.BooleanField(default=False)  # Kalibracja nieaktualna (prawdopodobnie boolean, 'F' = False)
 
     class Meta:
-        ordering = ('pr_id',)
+        ordering = ('ind_rek',)
+class Bok(models.Model):
+    bk_id = models.CharField(max_length=15,unique=True)  # Identyfikator rekordu
+    pr_id = models.ForeignKey('Osrodek_pr', related_name='boks', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Osrodek_pr
+    p_nr_fab = models.CharField(max_length=20)  # Numer fabryczny
+    u_id = models.ForeignKey('Uzytkownik', related_name='boks', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Uzytkownik
+    u_data_p = models.DateField(null=True, blank=True)  # Data przyjęcia
+    u_nr_potp = models.CharField(max_length=20)  # Numer potwierdzenia przyjęcia
+    u_dost = models.CharField(max_length=50)  # Dostawca
+    u_cecha_p = models.CharField(max_length=1)  # Cechowanie przyjęcia
+    u_stan_tp = models.CharField(max_length=1)  # Stan techniczny przyjęcia
+    u_podstawa = models.CharField(max_length=2)  # Podstawa przyjęcia
+    p_komplet = models.CharField(max_length=255)  # Informacja o komplecie
+    k_do_k_n = models.CharField(max_length=1)  # Kalibracja decyzja numer
+    k_do_data = models.DateField(null=True, blank=True)  # Data kalibracji
+    k_do_pesel = models.ForeignKey('Pers_st', related_name='bok_kalibracje', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Pers_st (kalibracja)
+    k_do_pin = models.CharField(max_length=4)  # PIN do kalibracji
+    k_do_datap = models.DateField(null=True, blank=True)  # Data pobrania do kalibracji
+    k_pr_sp_nr = models.CharField(max_length=15)  # Numer sprawdzenia kalibracji
+    k_sk_do = models.CharField(max_length=1)  # Kalibracja zakończona
+    k_bk_data = models.DateField(null=True, blank=True)  # Data zwrotu po kalibracji
+    k_bk_pesel = models.ForeignKey('Pers_st', related_name='bok_odbior', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Pers_st (osoba odbierająca)
+    k_bk_pin = models.CharField(max_length=4)  # PIN osoby przyjmującej po kalibracji
+    k_pr_sp = models.TextField()  # Opis procesu kalibracji
+    k_form = models.CharField(max_length=255)  # Formularz kalibracji
+    bk_uwagi = models.CharField(max_length=1)  # Uwagi BOK
+    u_data_w = models.DateField(null=True, blank=True)  # Data wydania
+    u_nr_potw = models.CharField(max_length=20)  # Numer potwierdzenia wydania
+    u_odbior = models.CharField(max_length=50)  # Odbiorca
+    u_nr_up = models.CharField(max_length=10)  # Numer użytkownika
+    bk_kbok = models.CharField(max_length=50)  # Kategoria BOK
+    om_pracow = models.ForeignKey('Osrodek_met', related_name='boks', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Osrodek_met
+    p_ind_rek = models.ForeignKey('Przyrzad_zmcbd', related_name='boks', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Przyrzad_zmcbd
+    p_typ = models.CharField(max_length=50)  # Typ przyrządu
+    u_nazwa_s = models.CharField(max_length=12)  # Nazwa skrócona użytkownika
+    kod_ean8 = models.CharField(max_length=8)  # Kod EAN8
+    u_kal = models.BooleanField(default=False)  # Kalibracja (True/False)
+    gwar = models.BooleanField(default=False)  # Gwarancja (True/False)
+    indeks = models.ForeignKey('Indexy_4', related_name='boks', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Indexy_4
+    denp = models.CharField(max_length=1)  # Cechowanie denp
+    cecha_br = models.CharField(max_length=1)  # Cecha braku
+    paczka = models.CharField(max_length=1)  # Paczka
 
+    class Meta:
+        ordering = ('bk_id',)
+    def get_udost_lastname(self):
+        return self.u_dost.split()[-1]
+    def __str__(self):
+        return f'{self.bk_id}-{self.u_dost}-{self.k_bk_pesel.l_imie}-{self.k_bk_pesel.pr_id.pr_nazwa_p}'
 
 class Ksiazka_k(models.Model):
     k_pr_sp_nr = models.CharField(max_length=15, unique=True)  # Calibration process number
-    bk_id = models.CharField(max_length=15)  # Foreign key to BOK table
+    bk_id = models.ForeignKey(Bok, related_name='ksiazki_k', on_delete=models.SET_NULL,null=True)  # Klucz obcy do modelu Bok
     kp_nr = models.CharField(max_length=16)  # Protocol number
-    pr_id = models.ForeignKey(Osrodek_pr, related_name='ksiazka_k', on_delete=models.SET_NULL, null=True)  # Foreign key to Osrodek_pr
+    pr_id = models.ForeignKey(Osrodek_pr, related_name='ksiazka_k', on_delete=models.SET_NULL,
+                              null=True)  # Foreign key to Osrodek_pr
     p_nr_fab = models.CharField(max_length=20)  # Serial number of the instrument
     p_typ = models.CharField(max_length=50)  # Type of the instrument
     u_nazwa_s = models.CharField(max_length=12)  # Short name of the user
     k_do_k_n = models.CharField(max_length=1)  # Calibration decision number
-    k_do_data = models.DateTimeField(null=True, blank=True)  # Date and time when the instrument was sent for calibration
-    k_do_pesel = models.ForeignKey(Pers_st, related_name='ksiazka_k_kalibracje', on_delete=models.SET_NULL, null=True)  # PESEL of the person responsible for calibration
-    k_bk_pesel = models.CharField(max_length=11)  # PESEL of the person who took over the instrument
+    k_do_data = models.DateTimeField(null=True,
+                                     blank=True)  # Date and time when the instrument was sent for calibration
+    k_do_pesel = models.ForeignKey(Pers_st, related_name='ksiazka_k_kalibracje', on_delete=models.SET_NULL,
+                                   null=True)  # PESEL of the person responsible for calibration
+    k_bk_pesel = models.ForeignKey(Pers_st, related_name='ksiazka_k_k_bk_pesel', on_delete=models.SET_NULL,
+                                   null=True)  # PESEL of the person who took over the instrument
     k_do_nazw = models.CharField(max_length=40)  # Last name of the person who took over the instrument
     k_do_datap = models.DateTimeField(null=True, blank=True)  # Date and time when the instrument was taken over
     k_do_dec = models.CharField(max_length=40)  # Decision related to the calibration
@@ -288,7 +364,7 @@ class Ksiazka_k(models.Model):
     k_uwagi = models.CharField(max_length=100)  # Remarks
     k_zaznacz = models.BooleanField()  # Marked (True/False)
     p_excel = models.CharField(max_length=255)  # Excel-related information
-    p_ind_rek = models.CharField(max_length=17)  # Record index
+    p_ind_rek = models.ForeignKey(Przyrzad_zmcbd, related_name='ksiazka_k', on_delete=models.SET_NULL, null=True)  # Klucz obcy do modelu Przyrzad_zmcbd
     u_data_p = models.DateField(null=True, blank=True)  # Date of acceptance into the deposit
     k_temp_k = models.DecimalField(max_digits=6, decimal_places=1)  # Temperature of the instrument
     k_wilgoc_k = models.DecimalField(max_digits=7, decimal_places=1)  # Humidity of the instrument
@@ -305,9 +381,12 @@ class Ksiazka_k(models.Model):
     wzor_od = models.BooleanField()  # Model for determination (True/False)
     wzor_rob = models.BooleanField()  # Working model (True/False)
     wzor_od_ro = models.BooleanField()  # Model for determination in case of revision (True/False)
-    indeks = models.ForeignKey(Indexy_4, related_name='ksiazka_k_indeks', on_delete=models.SET_NULL, null=True)  # Foreign key to Indexy_4
+    indeks = models.ForeignKey(Indexy_4, related_name='ksiazka_k_indeks', on_delete=models.SET_NULL,
+                               null=True)  # Foreign key to Indexy_4
 
     class Meta:
         ordering = ('k_pr_sp_nr',)
+
+
 """
 """

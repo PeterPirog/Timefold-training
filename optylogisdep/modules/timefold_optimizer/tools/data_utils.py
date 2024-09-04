@@ -64,15 +64,17 @@ def create_resource_class(model, foreign_keys=None):
     resource_class = type(f'{model.__name__}Resource', (resources.ModelResource,), attrs)
     return resource_class
 
-def verify_and_remove_missing_foreign_keys(df, df_ref, key, key_name):
+def verify_and_remove_missing_foreign_keys(df, df_ref, key, key_name, on_delete_behavior):
     """
-    Sprawdza brakujące klucze obce w dataframe i usuwa niepasujące rekordy.
+    Sprawdza brakujące klucze obce w dataframe i usuwa lub ustawia na NULL niepasujące rekordy
+    w zależności od zdefiniowanego zachowania on_delete.
 
     Args:
         df: Główna tabela DataFrame.
         df_ref: Tabela referencyjna DataFrame z wartościami kluczy obcych.
         key: Nazwa kolumny klucza obcego w df.
         key_name: Nazwa kolumny klucza obcego w df_ref.
+        on_delete_behavior: Zachowanie on_delete (CASCADE lub SET_NULL).
 
     Returns:
         Zaktualizowany DataFrame bez brakujących kluczy obcych.
@@ -81,7 +83,10 @@ def verify_and_remove_missing_foreign_keys(df, df_ref, key, key_name):
     if not missing_keys.empty:
         print(f"Brakujące rekordy {key} w źródłowym dataframe:")
         print(missing_keys)
-        df = df[df[key].isin(df_ref[key_name])]
+        if on_delete_behavior == 'CASCADE':
+            df = df[df[key].isin(df_ref[key_name])]
+        elif on_delete_behavior == 'SET_NULL':
+            df.loc[~df[key].isin(df_ref[key_name]), key] = None
     return df
 
 def load_data(resource_class, df):
@@ -116,11 +121,25 @@ def process_data(df, df_ref_dict=None, model=None, foreign_keys=None):
     if foreign_keys and df_ref_dict:
         for fk_field, (related_model, related_field) in foreign_keys.items():
             df_ref = df_ref_dict[related_model]
-            df = verify_and_remove_missing_foreign_keys(df, df_ref, fk_field, related_field)
+
+            # Sprawdzenie, które rekordy mają brakujące klucze obce lub niewłaściwe wartości, np. '#######'
+            missing_keys = df[~df[fk_field].isin(df_ref[related_field]) | df[fk_field].isin(['#######'])]
+            if not missing_keys.empty:
+                # Jeśli klucz obcy ma on_delete ustawione na CASCADE, pomiń rekord
+                if model._meta.get_field(fk_field).remote_field.on_delete.__name__ == 'CASCADE':
+                    print(f"Rekordy z brakującymi lub niewłaściwymi kluczami obcymi dla {fk_field} w modelu {model.__name__} zostaną pominięte:")
+                    print(missing_keys)
+                    df = df[df[fk_field].isin(df_ref[related_field]) & ~df[fk_field].isin(['#######'])]
+                # Jeśli klucz obcy ma on_delete ustawione na SET_NULL, ustaw wartość NULL
+                elif model._meta.get_field(fk_field).remote_field.on_delete.__name__ == 'SET_NULL':
+                    print(f"Rekordy z brakującymi lub niewłaściwymi kluczami obcymi dla {fk_field} w modelu {model.__name__} będą miały wartość {fk_field} ustawioną na NULL:")
+                    print(missing_keys)
+                    df.loc[~df[fk_field].isin(df_ref[related_field]) | df[fk_field].isin(['#######']), fk_field] = None
 
     resource_class = create_resource_class(model, foreign_keys)
     result = load_data(resource_class, df)
     return result
+
 
 def display_model_data_as_dataframe(Model: models.Model, exclude_relations: bool = False) -> None:
     """

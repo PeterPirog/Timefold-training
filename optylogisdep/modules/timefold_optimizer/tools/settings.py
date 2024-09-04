@@ -44,7 +44,7 @@ DBF_TABLES_PATH_DANE_SIM = [
 ]
 
 # List of columns containing only dates (without time)
-DATE_DAY_COLUMN_LIST = [
+DATE_COLUMN_LIST = [
     'l_ur',          # Data urodzenia (Date of birth)
     'k_data_sp',     # Data sprawdzenia przyrządu (Date of instrument inspection)
     'k_data_wa',     # Termin ważności przyrządu po kalibracji (Validity date after calibration)
@@ -57,7 +57,7 @@ DATE_DAY_COLUMN_LIST = [
 ]
 
 # List of columns containing dates with times
-DATE_HOUR_COLUMN_LIST = [
+DATETIME_COLUMN_LIST = [
     'k_do_datap',    # Data pobrania przyrządu z BOK przez wykonawcę prac (Date and time of instrument retrieval from BOK by the worker)
     'k_do_ddata',    # Data zlecenia prac przez kierownika pracowni (Date and time the work was commissioned by the workshop manager)
     'k_bk_ddata',    # Data wydania zlecenia przez kierownika pracowni o przekazaniu przyrządu do BOK po pracach (Date and time of issuing the order by the workshop manager to transfer the instrument to BOK after the work)
