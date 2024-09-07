@@ -1,6 +1,46 @@
 # Create your models here.
 from django.db import models
+from django.db.models import SET_NULL
 
+
+# models to run examples
+
+class Department(models.Model):
+    """
+    Model reprezentujący departament w organizacji.
+    """
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Project(models.Model):
+    """
+    Model reprezentujący projekt w organizacji.
+    """
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class EmployeeAssignment(models.Model):
+    """
+    Model reprezentujący przypisanie pracownika do projektu w danym departamencie.
+    """
+    department = models.ForeignKey(Department, related_name='employee_assignments', on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, related_name='employee_assignments', on_delete=models.CASCADE)
+    role = models.CharField(max_length=255, null=True, blank=True)
+    project_description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.department.name} - {self.project.name} - {self.role}"
+
+
+##########################################################################
 class Osrodek_pr(models.Model):
     pr_id = models.CharField(max_length=10, unique=True)  # Main center ID
     pr_nazwa_p = models.CharField(max_length=62)  # Full name of the center
@@ -134,9 +174,6 @@ class Indexy_4(models.Model):
 
     class Meta:
         ordering = ('indeks',)
-    def __str__(self):
-        return f'{self.indeks}, {self.nazwa},{self.p_pwaz_k},{self.p_norma_k}'
-
 
 
 class Osrodek_met(models.Model):
@@ -157,9 +194,12 @@ class Osrodek_met(models.Model):
     class Meta:
         ordering = ('om_id',)
 
+
 class Ind4_om(models.Model):
-    indeks = indeks = models.CharField(max_length=11, unique=True)
-    om_id = models.CharField(max_length=7)
+    indeks = models.ForeignKey(Indexy_4, related_name='om_customized_norms_indexes',
+                               on_delete=models.CASCADE)  # Foreign key to Indexy_4
+    om_id = models.ForeignKey(Osrodek_met, related_name='om_customized_norms',
+                              on_delete=models.CASCADE)  # Foreign key to Osrodek_met
     p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight K
     p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight U
     p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Standard K
@@ -173,8 +213,6 @@ class Ind4_om(models.Model):
     class Meta:
         ordering = ('indeks',)
 
-        def __str__(self):
-            return f'{self.indeks},{self.p_pwaz_k},{self.p_norma_k}'
 
 class Uzytkownik(models.Model):
     sz_ind = models.CharField(max_length=8)  # Index (likely not unique)
@@ -349,69 +387,6 @@ class Ksiazka_k(models.Model):
     class Meta:
         ordering = ('k_pr_sp_nr',)
 
-    def __str__(self):
-        return f"typ:{self.p_typ}, numer:{self.p_nr_fab}, kalibrujący:{self.k_do_nazw}, uzytkownik:{self.u_nazwa_s}\n"
 
-
-    @classmethod
-    def get_uncalibrated_devices_in_BOK(cls, pr_id):
-        """
-        Zwraca przyrządy przypisane do danej pracowni (pr_id), które są
-        przeznaczone do kalibracji i nie zostały jeszcze pobrane do kalibracji.
-
-        Args:
-        pr_id: numer ID pracowni, do której przypisane są przyrządy
-
-        Returns:
-        QuerySet: Zbiór przyrządów, które spełniają podane kryteria
-        """
-        return cls.objects.filter(
-            pr_id__pr_id=pr_id,       # Przyrządy przypisane do danej pracowni
-            k_do_k_n='2',             # Przyrządy są przeznaczone do kalibracji (nie do kontroli wewnętrznej)
-            k_do_datap__isnull=True   # Przyrząd nie został jeszcze pobrany do kalibracji
-        )
-    @classmethod
-    def devices_in_BOK_to_assign(cls, pr_id, excluded_words_list):
-        """
-        Zwraca przyrządy, które spełniają określone warunki:
-        1. k_do_nazw jest pusty (równe pusty string).
-        2. k_uwagi nie zawiera słów z podanej listy excluded_words_list.
-
-        :param pr_id: ID pracowni do filtrowania.
-        :param excluded_words_list: Lista wyrazów, które mają być wykluczone z pola k_uwagi.
-        :return: QuerySet z przyrządami do przypisania.
-        """
-        # Pobranie przyrządów do kalibracji
-        devices_uncalibrated_in_BOK = cls.get_uncalibrated_devices_in_BOK(pr_id=pr_id)
-
-        # Filtrowanie wierszy, gdzie k_do_nazw jest pusty
-        devices_in_BOK_to_assign = devices_uncalibrated_in_BOK.filter(k_do_nazw='')
-
-        # Wykluczanie wierszy na podstawie zawartości pola k_uwagi
-        for word in excluded_words_list:
-            devices_in_BOK_to_assign = devices_in_BOK_to_assign.exclude(k_uwagi__icontains=word)
-
-        return devices_in_BOK_to_assign
-
-
-class Indexy_4_updated(models.Model):
-    indeks = models.CharField(max_length=11, unique=True)  # Unique index code
-    nazwa = models.CharField(max_length=70)  # Name of the item
-    nsn = models.CharField(max_length=13)  # NSN (National Stock Number)
-    p_jm = models.CharField(max_length=10)  # Unit of measure
-    p_prod = models.CharField(max_length=10)  # Producer code
-    p_komplet = models.TextField()  # Completion information (Memo field)
-    p_tech = models.TextField()  # Technical description (Memo field)
-    p_wymagani = models.TextField()  # Requirements (Memo field)
-    ind_rek = models.CharField(max_length=17)  # Record index
-    p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight K
-    p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight U
-    p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Standard K
-    p_norma_u = models.DecimalField(max_digits=6, decimal_places=2)  # Standard U
-
-    class Meta:
-        ordering = ('indeks',)
-    def __str__(self):
-        return f'{self.indeks}, {self.nazwa},{self.p_pwaz_k},{self.p_norma_k}'
 """
 """

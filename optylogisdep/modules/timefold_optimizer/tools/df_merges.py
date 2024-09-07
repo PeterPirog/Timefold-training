@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import List, Tuple
-from optylogisdep.modules.timefold_optimizer.tools.settings import INDEX_PRACOWNI
+from optylogisdep.modules.timefold_optimizer.tools.settings import INDEX_PRACOWNI, EXCLUDED_WORDS_LIST
 from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
 
 

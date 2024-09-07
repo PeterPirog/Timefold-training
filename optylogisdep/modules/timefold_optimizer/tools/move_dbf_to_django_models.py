@@ -38,29 +38,22 @@ if __name__ == "__main__":
     df_Indexy_4 = dl.indexy_4
     result_indexy_4 = process_data(df_Indexy_4, model=Indexy_4)
 
-    # 4. Pers_st
+    # 4. Ind4_om
+    df_Ind4_om = dl.ind4_om
+    result_ind4_om = process_data(df_Ind4_om, model=Ind4_om)
+
+    # 5. Pers_st
     df_Pers_st = dl.pers_st
     pers_st_foreign_keys = {'pr_id': (Osrodek_pr, 'pr_id')}
     df_ref_dict = {Osrodek_pr: df_Osrodek_pr}
     result_pers_st = process_data(df_Pers_st, df_ref_dict=df_ref_dict, model=Pers_st, foreign_keys=pers_st_foreign_keys)
 
-    # 5. Uzytkownik
+    # 6. Uzytkownik
     df_Uzytkownik = dl.uzytkownik
     uzytkownik_foreign_keys = {'om_id': (Osrodek_met, 'om_id')}
     df_ref_dict = {Osrodek_met: df_Osrodek_met}
     result_uzytkownik = process_data(df_Uzytkownik, df_ref_dict=df_ref_dict, model=Uzytkownik, foreign_keys=uzytkownik_foreign_keys)
 
-    # 6. Ind4_om
-    df_Ind4_om = dl.ind4_om
-    ind4_om_foreign_keys = {
-        'indeks': (Indexy_4, 'indeks'),
-        'om_id': (Osrodek_met, 'om_id')
-    }
-    df_ref_dict = {
-        Indexy_4: df_Indexy_4,
-        Osrodek_met: df_Osrodek_met
-    }
-    result_ind4_om = process_data(df_Ind4_om, df_ref_dict=df_ref_dict, model=Ind4_om, foreign_keys=ind4_om_foreign_keys)
 
     # 7. Przyrzad_zmcbd
     df_Przyrzad_zmcbd = dl.przyrzad_zmcbd

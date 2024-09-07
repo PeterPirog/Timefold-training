@@ -82,6 +82,8 @@ STRING_COLUMN_LIST = [
 NUMERIC_COLUMN_LIST = [
     'l_norma_p'      # Personnel norm value
 ]
+# list of words to use in device description in table ksiazka_k field k_uwagi to not assign to calibration for technician
+EXCLUDED_WORDS_LIST=['brak', 'oczekuje', 'czeka', 'opracowywanie', 'zgłoszenie', 'opracowanie', 'opracowywanie', 'opracowaniu','opracowywaniu']
 
 def generate_dbf_paths(tables, directory):
     """Generate paths for DBF files."""

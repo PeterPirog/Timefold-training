@@ -169,3 +169,25 @@ def display_model_data_as_dataframe(Model: models.Model, exclude_relations: bool
     df.reset_index(drop=True, inplace=True)
     print(df)
     print("\n")  # Dodaj pustą linię po każdej tabeli dla lepszej czytelności
+
+def queryset_to_dataframe(queryset):
+    """
+    Konwertuje Django QuerySet na pandas DataFrame.
+
+    Args:
+    queryset: Django QuerySet, który chcemy przekonwertować
+
+    Returns:
+    pandas.DataFrame: DataFrame zawierający dane z QuerySet
+    """
+    # Konwersja QuerySet do listy słowników
+    records_list = list(queryset.values())
+
+    # Konwersja listy słowników na DataFrame
+    if records_list:
+        df = pd.DataFrame(records_list)
+    else:
+        # Jeśli QuerySet jest pusty, zwróć pusty DataFrame
+        df = pd.DataFrame()
+
+    return df
