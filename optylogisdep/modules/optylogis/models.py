@@ -1,5 +1,12 @@
 # Create your models here.
 from django.db import models
+from django.db.models import Case, When, F, Value
+from django.db.models.functions import Length
+from django.db import models
+from django.apps import apps
+from django.db.models import OuterRef, Subquery
+import pandas as pd
+import re
 
 class Osrodek_pr(models.Model):
     pr_id = models.CharField(max_length=10, unique=True)  # Main center ID
@@ -117,6 +124,8 @@ class Pers_gr(models.Model):
     def __str__(self):
         return f"{self.l_pesel.l_nazw_im},IUM: {self.ium}, SW Number: {self.nr_sw}, Date of Assignment: {self.data_nad}, Hanged: {self.zaw}, Canceled: {self.cof}, Last Calibration Date: {self.ost_sp}"
 
+
+
 class Indexy_4(models.Model):
     indeks = models.CharField(max_length=11, unique=True)  # Unique index code
     nazwa = models.CharField(max_length=70)  # Name of the item
@@ -134,10 +143,9 @@ class Indexy_4(models.Model):
 
     class Meta:
         ordering = ('indeks',)
+
     def __str__(self):
-        return f'{self.indeks}, {self.nazwa},{self.p_pwaz_k},{self.p_norma_k}'
-
-
+        return f'{self.indeks}, {self.nazwa}, {self.p_pwaz_k}, {self.p_norma_k}'
 
 class Osrodek_met(models.Model):
     om_id = models.CharField(max_length=7, unique=True, null=False)  # Unique ID of the metrological center
@@ -175,7 +183,25 @@ class Ind4_om(models.Model):
 
         def __str__(self):
             return f'{self.indeks},{self.p_pwaz_k},{self.p_norma_k}'
+class Indexy_4_updated(models.Model):
+    indeks = models.CharField(max_length=11, unique=True)  # Unique index code
+    nazwa = models.CharField(max_length=70)  # Name of the item
+    nsn = models.CharField(max_length=13)  # NSN (National Stock Number)
+    p_jm = models.CharField(max_length=10)  # Unit of measure
+    p_prod = models.CharField(max_length=10)  # Producer code
+    p_komplet = models.TextField()  # Completion information (Memo field)
+    p_tech = models.TextField()  # Technical description (Memo field)
+    p_wymagani = models.TextField()  # Requirements (Memo field)
+    ind_rek = models.CharField(max_length=17)  # Record index
+    p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight K
+    p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight U
+    p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Standard K
+    p_norma_u = models.DecimalField(max_digits=6, decimal_places=2)  # Standard U
 
+    class Meta:
+        ordering = ('indeks',)
+    def __str__(self):
+        return f'{self.indeks}, {self.nazwa},{self.p_pwaz_k},{self.p_norma_k}'
 class Uzytkownik(models.Model):
     sz_ind = models.CharField(max_length=8)  # Index (likely not unique)
     u_id = models.CharField(max_length=7, unique=True)  # User ID, primary key
@@ -343,8 +369,7 @@ class Ksiazka_k(models.Model):
     wzor_od = models.BooleanField()  # Model for determination (True/False)
     wzor_rob = models.BooleanField()  # Working model (True/False)
     wzor_od_ro = models.BooleanField()  # Model for determination in case of revision (True/False)
-    indeks = models.ForeignKey(Indexy_4, related_name='ksiazka_k_indeks', on_delete=models.SET_NULL,
-                               null=True)  # Foreign key to Indexy_4
+    indeks = models.CharField(max_length=11)
 
     class Meta:
         ordering = ('k_pr_sp_nr',)
@@ -356,20 +381,26 @@ class Ksiazka_k(models.Model):
     @classmethod
     def get_uncalibrated_devices_in_BOK(cls, pr_id):
         """
-        Zwraca przyrządy przypisane do danej pracowni (pr_id), które są
-        przeznaczone do kalibracji i nie zostały jeszcze pobrane do kalibracji.
+        Metoda zwraca przyrządy przypisane do danej pracowni, które są przeznaczone do kalibracji
+        i nie zostały jeszcze pobrane do kalibracji, na podstawie QuerySet z `get_ksiazka_k_with_rbh`.
 
         Args:
-        pr_id: numer ID pracowni, do której przypisane są przyrządy
+        pr_id: numer ID pracowni, do której przypisane są przyrządy.
 
         Returns:
-        QuerySet: Zbiór przyrządów, które spełniają podane kryteria
+        QuerySet: Zbiór przyrządów spełniających podane kryteria.
         """
-        return cls.objects.filter(
-            pr_id__pr_id=pr_id,       # Przyrządy przypisane do danej pracowni
-            k_do_k_n='2',             # Przyrządy są przeznaczone do kalibracji (nie do kontroli wewnętrznej)
-            k_do_datap__isnull=True   # Przyrząd nie został jeszcze pobrany do kalibracji
+        # Pobierz QuerySet rozszerzony o `p_norma_k` i `p_norma_u`
+        queryset_with_rbh = cls.get_ksiazka_k_with_rbh()
+
+        # Zastosuj dodatkowe filtry do QuerySet
+        uncalibrated_devices = queryset_with_rbh.filter(
+            pr_id__pr_id=pr_id,        # Przyrządy przypisane do danej pracowni
+            k_do_k_n='2',              # Przyrządy są przeznaczone do kalibracji (nie do kontroli wewnętrznej)
+            k_do_datap__isnull=True    # Przyrząd nie został jeszcze pobrany do kalibracji
         )
+
+        return uncalibrated_devices
     @classmethod
     def devices_in_BOK_to_assign(cls, pr_id, excluded_words_list):
         """
@@ -392,26 +423,33 @@ class Ksiazka_k(models.Model):
             devices_in_BOK_to_assign = devices_in_BOK_to_assign.exclude(k_uwagi__icontains=word)
 
         return devices_in_BOK_to_assign
+    @classmethod
+    def get_ksiazka_k_with_rbh(cls):
+        """
+        Metoda, która łączy dane z modelu Ksiazka_k z kolumnami p_norma_k i p_norma_u z modelu Indexy_4_updated.
+        Zwraca QuerySet z wynikami.
+        """
+        Indexy_4_updated = apps.get_model('optylogis', 'Indexy_4_updated')
+
+        # Podzapytania dla kolumn `p_norma_k` i `p_norma_u` z tabeli Indexy_4_updated
+        subquery_p_norma_k = Indexy_4_updated.objects.filter(indeks=OuterRef('indeks')).values('p_norma_k')[:1]
+        subquery_p_norma_u = Indexy_4_updated.objects.filter(indeks=OuterRef('indeks')).values('p_norma_u')[:1]
+
+        # Wykonanie zapytania z dodanymi kolumnami `p_norma_k` i `p_norma_u`
+        wynik = cls.objects.annotate(
+            p_norma_k=Subquery(subquery_p_norma_k),
+            p_norma_u=Subquery(subquery_p_norma_u)
+        )
+
+        return wynik  # Zwraca QuerySet z dodanymi polami `p_norma_k` i `p_norma_u`
+
+    @staticmethod
+    def remove_illegal_characters(text):
+        """ Funkcja do usuwania nielegalnych znaków z tekstu """
+        if isinstance(text, str):
+            return re.sub(r'[\x00-\x1f\x7f-\x9f]', '', text)
+        return text
 
 
-class Indexy_4_updated(models.Model):
-    indeks = models.CharField(max_length=11, unique=True)  # Unique index code
-    nazwa = models.CharField(max_length=70)  # Name of the item
-    nsn = models.CharField(max_length=13)  # NSN (National Stock Number)
-    p_jm = models.CharField(max_length=10)  # Unit of measure
-    p_prod = models.CharField(max_length=10)  # Producer code
-    p_komplet = models.TextField()  # Completion information (Memo field)
-    p_tech = models.TextField()  # Technical description (Memo field)
-    p_wymagani = models.TextField()  # Requirements (Memo field)
-    ind_rek = models.CharField(max_length=17)  # Record index
-    p_pwaz_k = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight K
-    p_pwaz_u = models.DecimalField(max_digits=5, decimal_places=2)  # Precision weight U
-    p_norma_k = models.DecimalField(max_digits=6, decimal_places=2)  # Standard K
-    p_norma_u = models.DecimalField(max_digits=6, decimal_places=2)  # Standard U
-
-    class Meta:
-        ordering = ('indeks',)
-    def __str__(self):
-        return f'{self.indeks}, {self.nazwa},{self.p_pwaz_k},{self.p_norma_k}'
 """
 """

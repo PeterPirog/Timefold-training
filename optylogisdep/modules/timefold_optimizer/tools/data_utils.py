@@ -1,8 +1,10 @@
 import pandas as pd
 from django.db import models
+from django.db.models.functions import Length
 from import_export import resources, fields
 from import_export.widgets import ForeignKeyWidget
 from tablib import Dataset
+
 
 def get_model_fields(model):
     """
@@ -191,3 +193,108 @@ def queryset_to_dataframe(queryset):
         df = pd.DataFrame()
 
     return df
+
+
+
+
+def update_indexy_4_updated(Indexy_4, Indexy_4_updated, Ind4_om):
+    """
+    Funkcja aktualizująca dane w tabeli Indexy_4_updated na podstawie tabeli Indexy_4 i Ind4_om.
+
+    Args:
+        Indexy_4: Model tabeli Indexy_4
+        Indexy_4_updated: Model tabeli Indexy_4_updated
+        Ind4_om: Model tabeli Ind4_om
+    """
+    # Usuń wszystkie rekordy z Indexy_4_updated, aby upewnić się, że jest pusta
+    Indexy_4_updated.objects.all().delete()
+
+    # Skopiuj wszystkie dane z Indexy_4 do Indexy_4_updated za pomocą bulk_create
+    indexy_4_records = Indexy_4.objects.all()
+
+    # Tworzenie listy obiektów Indexy_4_updated
+    updated_records = [
+        Indexy_4_updated(
+            indeks=record.indeks,
+            nazwa=record.nazwa,
+            nsn=record.nsn,
+            p_jm=record.p_jm,
+            p_prod=record.p_prod,
+            p_komplet=record.p_komplet,
+            p_tech=record.p_tech,
+            p_wymagani=record.p_wymagani,
+            ind_rek=record.ind_rek,
+            p_pwaz_k=record.p_pwaz_k,
+            p_pwaz_u=record.p_pwaz_u,
+            p_norma_k=record.p_norma_k,
+            p_norma_u=record.p_norma_u,
+        )
+        for record in indexy_4_records
+    ]
+
+    # Użycie bulk_create do wstawienia wszystkich rekordów za jednym razem
+    Indexy_4_updated.objects.bulk_create(updated_records)
+
+    # Usunięcie filtrowania po długości indeksu, aby nie pomijać rekordów
+    indexy_4_updated_records = Indexy_4_updated.objects.all()
+
+    # Licznik zaktualizowanych rekordów
+    updated_count = 0
+
+    # Iteracja przez wszystkie rekordy w Indexy_4_updated
+    for record in indexy_4_updated_records:
+        try:
+            # Szukamy odpowiedniego rekordu w Ind4_om na podstawie pola 'indeks'
+            ind4_om_record = Ind4_om.objects.get(indeks=record.indeks)
+
+            # Aktualizujemy pola w Indexy_4_updated na podstawie rekordu z Ind4_om
+            record.p_pwaz_k = ind4_om_record.p_pwaz_k
+            record.p_pwaz_u = ind4_om_record.p_pwaz_u
+            record.p_norma_k = ind4_om_record.p_norma_k
+            record.p_norma_u = ind4_om_record.p_norma_u
+
+            # Zapisujemy zaktualizowany rekord
+            record.save()
+
+            # Zwiększamy licznik zaktualizowanych rekordów
+            updated_count += 1
+
+        except Ind4_om.DoesNotExist:
+            pass
+
+    print(f"Aktualizacja zakończona. Zaktualizowano {updated_count} rekordów.")
+
+    return indexy_4_updated_records
+
+def compare_and_remove_missing(table_to_clean, table_to_check, field_to_clean, field_to_check):
+    """
+    Funkcja porównująca rekordy między dwiema tabelami, aby znaleźć rekordy w `table_to_clean`,
+    które nie mają odpowiednika w `table_to_check`, oraz usuwa te rekordy.
+
+    Args:
+        table_to_clean: Model tabeli, która ma być "czyszczona" (z której rekordy zostaną usunięte)
+        table_to_check: Model tabeli, w której szukamy brakujących rekordów
+        field_to_clean: Nazwa pola w `table_to_clean`, które chcemy porównać
+        field_to_check: Nazwa pola w `table_to_check`, względem którego porównujemy
+
+    Returns:
+        None: Wyświetla różnice w konsoli i usuwa brakujące rekordy z `table_to_clean`
+    """
+    # Pobierz wartości z tabeli do porównania
+    check_values = table_to_check.objects.values_list(field_to_check, flat=True)
+
+    # Znajdź rekordy w table_to_clean, które nie mają odpowiednika w table_to_check
+    missing_records = table_to_clean.objects.exclude(**{f"{field_to_clean}__in": check_values})
+
+    # Konwertuj wyniki do pandas DataFrame
+    df_missing = pd.DataFrame.from_records(missing_records.values())
+
+    if df_missing.empty:
+        print(f"Wszystkie rekordy w {table_to_clean._meta.db_table} mają odpowiednik w {table_to_check._meta.db_table}.")
+    else:
+        print(f"Znaleziono {len(df_missing)} rekordów w {table_to_clean._meta.db_table}, które nie występują w {table_to_check._meta.db_table}:")
+        print(df_missing)
+
+        # Usunięcie brakujących rekordów z bazy danych
+        missing_count, _ = missing_records.delete()
+        print(f"Usunięto {missing_count} rekordów z tabeli {table_to_clean._meta.db_table}.")

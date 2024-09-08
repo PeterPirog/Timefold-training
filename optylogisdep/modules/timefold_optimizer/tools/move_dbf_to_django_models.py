@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from django.apps import apps
 from optylogisdep.modules.timefold_optimizer.tools.ODBCDataLoader import DataLoader
-from data_utils import create_resource_class, process_data, display_model_data_as_dataframe
+from data_utils import create_resource_class, process_data, display_model_data_as_dataframe,update_indexy_4_updated,compare_and_remove_missing
 
 # Ustawienia Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'optylogisdep.optylogisdep.settings')
@@ -26,6 +26,9 @@ if __name__ == "__main__":
     Przyrzad_zmcbd = apps.get_model('optylogis', 'Przyrzad_zmcbd')
     Bok = apps.get_model('optylogis', 'Bok')
 
+    # additional tables
+    Indexy_4_updated = apps.get_model('optylogis', 'Indexy_4_updated') # table to indexy_4 updated with ind4_om
+
     # 1. Osrodek_pr
     df_Osrodek_pr = dl.osrodek_pr
     result_osrodek_pr = process_data(df_Osrodek_pr, model=Osrodek_pr)
@@ -41,6 +44,12 @@ if __name__ == "__main__":
     # 4. Ind4_om
     df_Ind4_om = dl.ind4_om
     result_ind4_om = process_data(df_Ind4_om, model=Ind4_om)
+
+    # remove from Ind4_om records not existing in Indexy_4
+    compare_and_remove_missing(Ind4_om, Indexy_4, 'indeks', 'indeks')
+
+    # 4a. update table  indexy_4  with ind4_om data and create new table Indexy_4_updated
+    update_indexy_4_updated(Indexy_4, Indexy_4_updated, Ind4_om)
 
     # 5. Pers_st
     df_Pers_st = dl.pers_st
@@ -101,7 +110,7 @@ if __name__ == "__main__":
         'pr_id': (Osrodek_pr, 'pr_id'),           # Klucz obcy do modelu Osrodek_pr
         'k_do_pesel': (Pers_st, 'l_pesel'),       # Klucz obcy do modelu Pers_st
         'k_bk_pesel': (Pers_st, 'l_pesel'),       # Klucz obcy do modelu Pers_st
-        'indeks': (Indexy_4, 'indeks'),           # Klucz obcy do modelu Indexy_4
+        #'indeks': (Indexy_4, 'indeks'),           # Klucz obcy do modelu Indexy_4
         'p_ind_rek': (Przyrzad_zmcbd, 'ind_rek'), # Klucz obcy do modelu Przyrzad_zmcbd
         'bk_id': (Bok, 'bk_id')                   # Klucz obcy do modelu Bok
     }
@@ -110,7 +119,7 @@ if __name__ == "__main__":
     df_ref_dict = {
         Osrodek_pr: df_Osrodek_pr,
         Pers_st: df_Pers_st,
-        Indexy_4: df_Indexy_4,
+        #Indexy_4: df_Indexy_4,
         Przyrzad_zmcbd: df_Przyrzad_zmcbd,
         Bok: df_Bok  # Dodanie referencji do modelu Bok
     }
