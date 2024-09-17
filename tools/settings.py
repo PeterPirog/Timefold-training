@@ -1,6 +1,7 @@
 import os
 
 # Instead of using relative paths, use absolute paths to the directories
+# Instead of using relative paths, use absolute paths to the directories
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOGIS_DIRECTORY = os.path.join(PROJECT_ROOT, 'Logis')  # place for define the Logis directory with data
 PYTHON_32BIT_INTERPRETER = os.path.join(PROJECT_ROOT, 'venv32/Scripts/python')
@@ -10,24 +11,74 @@ CSV_FILES_PATH = os.path.join(PROJECT_ROOT, 'tools/CSV_files')
 # Base directory for DBF files, make sure the path is valid and accessible
 CONNECTION_STRING = 'DSN=VisualFoxProDSN;SourceDB={directory};Exclusive=No;BackgroundFetch=Yes;Collate=Machine;Null=Yes;Deleted=No;'
 
-# Tables in the DANE and DANE_SIM directories
+# Paths to DBF tables within the 'DANE' directory
 DBF_TABLES_PATH_DANE = [
-    'bok', 'bok_arch', 'indexy_4','ind4_om', 'pers_gr', 'pers_st',
-    'ksiazka_k', 'om_zu', 'pdf_protspr', 'przyrzad_zmcbd','ind4_om','terminy','pers_nob'
+    'bok',               # Main BOK table
+    'bok_arch',          # Archived BOK data
+    'indexy_4',          # Indexes table
+    'ind4_om',           # OM indexes table
+    'pers_gr',           # Group personnel data
+    'pers_st',           # Station personnel data
+    'ksiazka_k',         # Book of calibration logs
+    'om_zu',             # OM operations table
+    'pdf_protspr',       # PDF protocols for sample protection
+    'przyrzad_zmcbd',    # Devices and equipment data
+    'ind4_om',           # OM indexes table (duplicate, might need to check if intentional)
+    'terminy',           # Deadlines table
+    'pers_nob'           # Non-operational personnel data
 ]
-# 'ksiazka_k_arch' is ignored becasue is too big for 32-bit ODBC read without chunks
+
+# Paths to DBF tables within the 'DANE_SIM' directory
 DBF_TABLES_PATH_DANE_SIM = [
-    'uzytkownik', 'osrodek_met', 'osrodek_pr', 'pyt_podstawa','pers_ob'
+    'uzytkownik',        # Users data
+    'osrodek_met',       # Metrological centers
+    'osrodek_pr',        # PR centers
+    'pyt_podstawa',      # Base questions or criteria
+    'pers_ob'            # Operational personnel data
 ]
 
-DATE_COLUMN_LIST = ['DATA_NAD', 'OST_SP', 'data_nad', 'ost_sp', 'k_do_data', 'k_do_datap', 'k_do_ddata', 'k_bk_data',
-                    'k_bk_dec', 'k_bk_ddata',
-                    'k_data_sp', 'k_data_wa', 'k_data_kp', 'ostatni', 'k_data_kj', 'k_data_kz', 'k_data_spp',
-                    'k_data_spk', 'l_kl3', 'l_kl2', 'l_kl1', 'l_klm', 'l_ur','u_data_p','u_data_w']
+# List of columns containing only dates (without time)
+DATE_COLUMN_LIST = [
+    'l_ur',          # Data urodzenia (Date of birth)
+    'k_data_sp',     # Data sprawdzenia przyrządu (Date of instrument inspection)
+    'k_data_wa',     # Termin ważności przyrządu po kalibracji (Validity date after calibration)
+    'k_data_kp',     # Data podpisania protokołu sprawdzenia przez kierownika pracowni (Date of signing the inspection protocol by the workshop manager)
+    'k_data_kj',     # Data podpisania protokołu stanu technicznego przez spec. ds. jakości (Date of signing the technical condition protocol by the quality specialist)
+    'k_data_kz',     # Data podpisania protokołu stanu technicznego przez kierownika zakładu (Date of signing the technical condition protocol by the plant manager)
+    'u_data_p',      # Data przyjęcia do depozytu (Date of acceptance into the deposit)
+    'u_data_w',      # Data wydania z depozytu (Date of release from the deposit)
+]
 
-# Some columns with number which should be treated as a string not a number
-STRING_COLUMN_LIST = ['indeks', 'ium', 'pr_id', 'st_id','k_do_pesel', 'k_do_pin', 'k_pr_sp','p_nr_fab','u_id']
-NUMERIC_COLUMN_LIST = ['l_norma_p']
+# List of columns containing dates with times
+DATETIME_COLUMN_LIST = [
+    'k_do_datap',    # Data pobrania przyrządu z BOK przez wykonawcę prac (Date and time of instrument retrieval from BOK by the worker)
+    'k_do_ddata',    # Data zlecenia prac przez kierownika pracowni (Date and time the work was commissioned by the workshop manager)
+    'k_bk_ddata',    # Data wydania zlecenia przez kierownika pracowni o przekazaniu przyrządu do BOK po pracach (Date and time of issuing the order by the workshop manager to transfer the instrument to BOK after the work)
+    'k_bk_data',      # Data przyjęcia przyrządu do BOK po wykonaniu prac (Date and time of acceptance of the instrument to BOK after the work)
+    'k_do_data',      # Data skierowania przyrządu przez BOK do kalibracji (Date the instrument was sent by BOK for calibration)
+]
+
+# Columns to be treated as strings instead of numbers
+STRING_COLUMN_LIST = [
+    'indeks',        # Index identifier
+    'ium',           # IUM identifier
+    'pr_id',         # PR identifier
+    'st_id',         # Station identifier
+    'k_do_pesel',    # PESEL number for calibration personnel
+    'k_do_pin',      # PIN for calibration personnel
+    'k_pr_sp',       # Calibration process number
+    'p_nr_fab',      # Device serial number
+    'u_id',          # User ID
+    'om_id',          # OM identifier
+    'u_nazwa_s'      # Device User name
+]
+
+# Columns to be treated as numeric values
+NUMERIC_COLUMN_LIST = [
+    'l_norma_p'      # Personnel norm value
+]
+# list of words to use in device description in table ksiazka_k field k_uwagi to not assign to calibration for technician
+EXCLUDED_WORDS_LIST=['brak', 'oczekuje', 'czeka', 'opracowywanie', 'zgłoszenie', 'opracowanie', 'opracowywanie', 'opracowaniu','opracowywaniu']
 
 def generate_dbf_paths(tables, directory):
     """Generate paths for DBF files."""
@@ -41,7 +92,7 @@ dbf_paths_dane_sim = generate_dbf_paths(DBF_TABLES_PATH_DANE_SIM, os.path.join(L
 DBF_PATHS = {**dbf_paths_dane, **dbf_paths_dane_sim}
 
 ###  CONSTANTS FOR TIMEFOLD
-INDEX_PRACOWNI = '9111497111'  #index to select technician and devices from the same unit of organization
+INDEX_PRACOWNI = '9111497111'  # '9111497117'  '9111497111' '9111497311' to select technician and devices from the same unit of organization
 
 # Example usage:
 if __name__ == "__main__":
