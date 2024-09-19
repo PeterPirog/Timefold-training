@@ -227,7 +227,7 @@ if __name__ == '__main__':
     # find rbh_for_pesel
 
     # Grupowanie wierszy dla kolumny 'k_do_nazw' i sumowanie wartości w kolumnie 'p_norma_k'
-    rbh_for_pesel = devices_in_bok_to_select.groupby('k_do_nazw', as_index=False)['p_norma_k'].sum()
+    rbh_for_pesel = devices_uncalibrated_in_bok.groupby('k_do_nazw', as_index=False)['p_norma_k'].sum()
 
     # Zmiana nazwy kolumny z zsumowanymi wartościami na 'sum_p_norma_k'
     rbh_for_pesel = rbh_for_pesel.rename(columns={'p_norma_k': 'sum_p_norma_k'})
