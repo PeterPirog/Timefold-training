@@ -1,7 +1,7 @@
 import pandas as pd
 pd.set_option("display.max_columns", None)
 import numpy as np
-from tools.settings import INDEX_PRACOWNI
+from tools.settings import INDEX_PRACOWNI,EXCLUDED_WORDS_LIST
 from tools.ODBCDataLoader import DataLoader
 
 class DevicesDataProcessor:
@@ -205,7 +205,35 @@ if __name__ == '__main__':
     ksiazka_k=ksiazka_k.drop(columns=columns_to_drop)
     columns_order=['ium','dni_w_om','nazwa','p_typ','p_nr_fab','k_uwagi','u_nazwa_s','k_do_nazw','p_norma_k']
 
-    ksiazka_k = ksiazka_k[columns_order]
+    devices_uncalibrated_in_bok = ksiazka_k[columns_order].copy()
 
-    print(ksiazka_k.head())
-    print(ksiazka_k.info())
+    print(devices_uncalibrated_in_bok.head())
+    print(devices_uncalibrated_in_bok.info())
+
+
+    # find devices_in_bok_to_select
+    devices_in_bok_to_select = devices_uncalibrated_in_bok[
+        devices_uncalibrated_in_bok['k_do_nazw'].isnull() | (devices_uncalibrated_in_bok['k_do_nazw'] == '')
+        ]
+
+    # Wykluczanie wierszy, w których kolumna 'k_uwagi' zawiera słowa z listy EXCLUDED_WORDS_LIST
+    for word in EXCLUDED_WORDS_LIST:
+        devices_in_bok_to_select = devices_in_bok_to_select[
+            ~devices_in_bok_to_select['k_uwagi'].str.contains(word, case=False, na=False)
+        ]
+
+    print(devices_in_bok_to_select.head())
+
+    # find rbh_for_pesel
+
+    # Grupowanie wierszy dla kolumny 'k_do_nazw' i sumowanie wartości w kolumnie 'p_norma_k'
+    rbh_for_pesel = devices_in_bok_to_select.groupby('k_do_nazw', as_index=False)['p_norma_k'].sum()
+
+    # Zmiana nazwy kolumny z zsumowanymi wartościami na 'sum_p_norma_k'
+    rbh_for_pesel = rbh_for_pesel.rename(columns={'p_norma_k': 'sum_p_norma_k'})
+
+    # Sortowanie wynikowego DataFrame rosnąco po kolumnie 'k_do_nazw'
+    rbh_for_pesel = rbh_for_pesel.sort_values(by='k_do_nazw', ascending=True)
+
+    # Wyświetlenie posortowanych danych
+    print(rbh_for_pesel.head())
