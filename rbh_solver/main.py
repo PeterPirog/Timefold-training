@@ -50,30 +50,30 @@ def on_best_solution_change(event):
     print(f"Hard score: {-best_solution.score.hard_score}, Soft score: {best_solution.score.soft_score}")
 
 
-# Konfiguracja solvera
-solver_factory = SolverFactory.create(
-    SolverConfig(
-        solution_class=DeviceSchedule,
-        entity_class_list=[Device],
-        score_director_factory_config=ScoreDirectorFactoryConfig(
-            constraint_provider_function=define_constraints
-        ),
-        termination_config=TerminationConfig(
-            spent_limit=Duration(seconds=60)
+    # Konfiguracja solvera
+    solver_factory = SolverFactory.create(
+        SolverConfig(
+            solution_class=DeviceSchedule,
+            entity_class_list=[Device],
+            score_director_factory_config=ScoreDirectorFactoryConfig(
+                constraint_provider_function=define_constraints
+            ),
+            termination_config=TerminationConfig(
+                spent_limit=Duration(seconds=60)
+            )
         )
     )
-)
 
-solver = solver_factory.build_solver()
+    solver = solver_factory.build_solver()
 
-# Dodanie nasłuchiwacza najlepszego rozwiązania
-solver.add_event_listener(on_best_solution_change)
+    # Dodanie nasłuchiwacza najlepszego rozwiązania
+    solver.add_event_listener(on_best_solution_change)
 
-# Generate the problem instance
-problem = generate_problem(technicians_list[:10], devices_list)
+    # Generate the problem instance
+    problem = generate_problem(technicians_list[:10], devices_list)
 
-# Solve the problem
-solution = solver.solve(problem)
+    # Solve the problem
+    solution = solver.solve(problem)
 
-# Print the solution
-print_solution(solution, extended=False)
+    # Print the solution
+    print_solution(solution, extended=False)

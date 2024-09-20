@@ -6,55 +6,48 @@ import pandas as pd
 from timefold.solver.domain import PlanningId, planning_entity, planning_solution, PlanningVariable, \
     PlanningEntityCollectionProperty, ProblemFactCollectionProperty, ValueRangeProvider, PlanningScore
 from timefold.solver.score import HardSoftScore
-from tools.df_merges import technicians, devices_in_bok_to_select
-from dataclasses import dataclass, field
-from typing import Annotated, Set, List, Union
-from timefold.solver.domain import PlanningId, planning_entity, PlanningVariable
-from timefold.solver.domain import planning_solution, PlanningEntityCollectionProperty, ProblemFactCollectionProperty, ValueRangeProvider, PlanningScore
-from timefold.solver.score import HardSoftScore
+
+# Import danych z istniejących skryptów
+from tools.df_merges import technicians, devices_in_bok_to_assign
+
 
 @dataclass
 class Technician:
     id: Annotated[int, PlanningId]
-    pesel: str
-    name: str
-    rbh_per_week: int
-    rbh_per_year: float
-    rbh_week_plan: float
-    selected_rbh: float
-    free_rbh: float
-    iums: Set[str]
+    name: str  # zmiana na 'technician'
+    rbh_do_zaplanowania: float  # zmiana na 'rbh_do_zaplanowania'
+    rbh_przydzielone: float  # zmiana na 'rbh_przydzielone'
+    iums: Set[str]  # iums na końcu, zgodnie z wynikami
 
     def has_ium(self, ium: str) -> bool:
         return ium in self.iums
 
     def __str__(self) -> str:
-        return f"Technician(id={self.id}, name={self.name}, pesel={self.pesel}, " \
-               f"rbh_per_week={self.rbh_per_week}, rbh_per_year={self.rbh_per_year}, " \
-               f"rbh_week_plan={self.rbh_week_plan}, selected_rbh={self.selected_rbh}, " \
-               f"free_rbh={self.free_rbh}, iums={self.iums})"
+        return f"Technician(id={self.id}, name={self.name}, " \
+               f"rbh_do_zaplanowania={self.rbh_do_zaplanowania}, " \
+               f"rbh_przydzielone={self.rbh_przydzielone}, iums={self.iums})"
+
 
 @planning_entity
 @dataclass
 class Device:
     index: Annotated[int, PlanningId]
-    ind_rek: str
     ium: str
     nazwa: str
     typ: str
-    nr_fab: str
-    norma_rbh: float
-    data_dostawy: str
-    uzytkownik: str
-    pesel: Annotated[Technician | None, PlanningVariable(allows_unassigned=True)] = field(default=None)
-    #pesel: Annotated[Technician | None, PlanningVariable] = field(default=None)
+    nr_fabryczny: str  # zmiana na 'nr_fabryczny'
+    rbh_norma: float  # zmiana na 'rbh_norma'
+    dni_w_om: int
+    uzytkownik: str  # zmiana na 'uzytkownik'
+    technician: Annotated[Technician | None, PlanningVariable(allows_unassigned=True)] = field(default=None)
 
     def __str__(self) -> str:
-        technician_str = str(self.pesel) if self.pesel else "None"
-        return (f"Device(index={self.index}, ind_rek={self.ind_rek}, ium={self.ium}, "
-                f"nazwa={self.nazwa}, typ={self.typ}, nr_fab={self.nr_fab}, "
-                f"norma_rbh={self.norma_rbh}, data_dostawy={self.data_dostawy}, "
+        technician_str = str(self.technician) if self.technician else "None"
+        return (f"Device(index={self.index}, ium={self.ium}, "
+                f"nazwa={self.nazwa}, typ={self.typ}, nr_fabryczny={self.nr_fabryczny}, "
+                f"rbh_norma={self.rbh_norma}, dni_w_om={self.dni_w_om}, "
                 f"uzytkownik={self.uzytkownik}, assigned_technician={technician_str})")
+
 
 @planning_solution
 @dataclass
@@ -66,69 +59,53 @@ class DeviceSchedule:
 
     def __str__(self):
         return (
-            f"DeviceSchedule("
-            f"id={self.id},\n"
+            f"DeviceSchedule(id={self.id},\n"
             f"technician_list={self.technician_list},\n"
             f"device_list={self.device_list},\n"
-            f"score={self.score}"
-            f")"
+            f"score={self.score})"
         )
 
 
-
-# Function to generate devices from provided data
-def generate_devices(devices: DataFrame) -> List[Device]:
-    return [_create_device(index, row) for index, row in devices.iterrows()]
-
-
-# Function to create a device
-def _create_device(index: int, row: Dict) -> Device:
-    data_dostawy = row['u_data_p']
-    data_dostawy = data_dostawy.strftime('%Y-%m-%d') if isinstance(data_dostawy, datetime) else data_dostawy
-
-    pesel_value = row.get('k_do_pesel', None)
-    technician = next((t for t in technicians_list if t.pesel == pesel_value), None) if pd.notna(pesel_value) else None
-
-    #print(f"Creating Device: index={index}, norma_rbh={row.get('p_norma_k', 'Missing')}")
-
-    return Device(
-        index=index,
-        ind_rek=row['p_ind_rek'],
-        ium=row['ium'],
-        nazwa=row['nazwa'],
-        typ=row['p_typ'],
-        nr_fab=row['p_nr_fab'],
-        norma_rbh=row['p_norma_k'],
-        data_dostawy=data_dostawy,  # Ensure it's a string
-        uzytkownik=row['u_nazwa_s'],
-        pesel=technician  # Assign the Technician object or None
+# Funkcja tworząca techników z dataframe
+def _create_technician(index: int, row: Dict[str, Union[int, str, float, Set[str]]]) -> Technician:
+    return Technician(
+        id=index,
+        name=row['technician'],  # zmiana na 'technician'
+        rbh_do_zaplanowania=row['rbh_do_zaplanowania'],
+        rbh_przydzielone=row['rbh_przydzielone'],
+        iums=set(row['iums'])  # zestaw unikalnych ium
     )
 
 
-# Function to generate technicians from provided data
+# Funkcja tworząca urządzenia z dataframe
+def _create_device(index: int, row: Dict) -> Device:
+    technician_value = row.get('technician', None)
+    technician = next((t for t in technicians_list if t.name == technician_value), None) if pd.notna(technician_value) else None
+
+    return Device(
+        index=index,
+        ium=row['ium'],
+        nazwa=row['nazwa'],
+        typ=row['typ'],
+        nr_fabryczny=row['nr_fabryczny'],
+        rbh_norma=row['rbh_norma'],
+        dni_w_om=row['dni_w_om'],
+        uzytkownik=row['uzytkownik'],
+        technician=technician
+    )
+
+
+# Funkcja generująca techników z dataframe
 def generate_technicians(technicians: DataFrame) -> List[Technician]:
     return [_create_technician(index, row) for index, row in technicians.iterrows()]
 
 
-# Function to create a technician
-from typing import Set
+# Funkcja generująca urządzenia z dataframe
+def generate_devices(devices: DataFrame) -> List[Device]:
+    return [_create_device(index, row) for index, row in devices.iterrows()]
 
 
-def _create_technician(index: int, row: Dict[str, Union[int, str, float, Set[str]]]) -> Technician:
-    return Technician(
-        id=index,
-        pesel=str(row['l_pesel']),
-        name=str(row['l_nazw_im']),
-        rbh_per_week=int(row['l_pr_thn']),
-        rbh_per_year=float(row['l_norma_p']),
-        rbh_week_plan=float(row['rbh_week_plan']),
-        selected_rbh=float(row['selected_rbh']),
-        free_rbh=float(row['free_rbh']),
-        iums=set(row['iums'])
-    )
-
-
-# Function to print datatables
+# Funkcja drukująca techników i urządzenia
 def print_datatables(devices: List[Device], technicians: List[Technician]):
     for device in devices:
         print(device)
@@ -136,23 +113,10 @@ def print_datatables(devices: List[Device], technicians: List[Technician]):
         print(technician)
 
 
-# creating lists
-devices_list = generate_devices(devices_in_bok_to_select)
+# Tworzenie list
+devices_list = generate_devices(devices_in_bok_to_assign)  # zmiana na devices_in_bok_to_assign
 technicians_list = generate_technicians(technicians)
 
-# processing
+# Przetwarzanie
 if __name__ == '__main__':
     print_datatables(devices_list, technicians_list)
-"""
-solution:
-Technician(id=6, name=Karbownik Joanna) total norma_rbh: 50.0
-Technician(id=11, name=Kubaczyk Krzysztof) total norma_rbh: 28.0
-Technician(id=17, name=Skoniecka Agnieszka) total norma_rbh: 24.0
-Technician(id=19, name=Szewczyk Mariusz) total norma_rbh: 28.0
-Technician(id=2, name=Fodemski Dominik) total norma_rbh: 4.0
-Technician(id=4, name=Kalinowski Jarosław) total norma_rbh: 2.0
-Technician(id=0, name=Bugaj Ireneusz) total norma_rbh: 102.0
-Technician(id=5, name=Kaliś Krzysztof) total norma_rbh: 12.5
-Technician(id=1, name=Byszewski Dariusz) total norma_rbh: 120.0
-Technician(id=10, name=Krzycholik Dariusz) total norma_rbh: 48.0
-"""

@@ -1,239 +1,214 @@
 import pandas as pd
-pd.set_option("display.max_columns", None)
 import numpy as np
-from tools.settings import INDEX_PRACOWNI,EXCLUDED_WORDS_LIST
+import os
+import ast  # Import dla funkcji literal_eval do konwersji stringów na listy
+from tools.settings import INDEX_PRACOWNI, EXCLUDED_WORDS_LIST
 from tools.ODBCDataLoader import DataLoader
+
+pd.set_option("display.max_columns", None)
 
 class DevicesDataProcessor:
     """
-    This class is used to process device data. It loads the initial dataframe, filters it,
-    adds necessary columns, and performs data merges.
+    This class processes device data, including filtering, adding columns, and performing merges.
     """
 
     def __init__(self):
-        self.columns_to_use_in_ksiazka_k=['pr_id','p_nr_fab','p_typ','u_nazwa_s','k_do_k_n','k_do_data','k_do_nazw','k_do_datap','k_bk_data','k_data_sp']
+        self.columns_to_use_in_ksiazka_k = ['bk_id', 'pr_id', 'p_nr_fab', 'p_typ', 'u_nazwa_s', 'k_do_k_n', 'k_do_nazw', 'k_do_datap', 'k_uwagi', 'indeks']
         self.data_loader = DataLoader()
         self.indexy_4 = self.data_loader.indexy_4
         self.ind4_om = self.data_loader.ind4_om[['indeks', 'p_norma_k']]
         self.ksiazka_k = self.data_loader.ksiazka_k
-        print(self.ksiazka_k.head())
+        self.bok = self.data_loader.bok[['bk_id', 'u_data_p']]
 
-    def filter_bok_by_pracownia(self, selected_columns):
+    def update_indexy_rbh(self):
         """
-        Filters the ksiazka_k dataframe (referred as BOK) by a specific ID (INDEX_PRACOWNI) and two date conditions.
-        Only includes the selected columns in the returned dataframe.
-        """
-        bok = self.ksiazka_k[selected_columns]
-        return bok[
-            (bok['pr_id'] == INDEX_PRACOWNI) &
-            (bok['k_do_data'] > '1900-01-01') &
-            (bok['k_do_datap'] < '1900-01-01')
-            ].copy()
-
-    def add_ium_and_indeks8_columns(self, bok, columns):
-        """
-        Adds two new columns 'ium' and 'indeks8' to the dataframe.
-        These columns are derived from the 'indeks' column by taking substrings of the 'indeks' entries.
-        """
-        bok['ium'] = bok['indeks'].str[:6]
-        columns.insert(columns.index('indeks') + 1, 'ium')
-        bok_with_ium = bok[columns].copy()
-        bok_with_ium['indeks8'] = bok_with_ium['indeks'].str[:8]
-        return bok_with_ium
-
-    def prepare_reduced_bok(self):
-        """
-        Obtains the reduced BOK dataframe by first filtering the initial dataframe
-        and then adding the necessary 'ium' and 'indeks8' columns to it.
-        """
-        selected_columns = [
-            'pr_id', 'p_nr_fab', 'u_nazwa_s', 'u_data_p', 'k_do_data',
-            'k_do_pesel', 'k_do_datap', 'k_bk_data', 'p_ind_rek',
-            'p_typ', 'indeks'
-        ]
-        reduced_columns = [
-            'p_ind_rek', 'indeks', 'p_typ', 'p_nr_fab',
-            'u_data_p', 'k_do_pesel', 'u_nazwa_s'
-        ]
-        filtered_bok = self.filter_bok_by_pracownia(selected_columns)
-        return self.add_ium_and_indeks8_columns(filtered_bok, reduced_columns)
-
-    def update_indexy_rbh(self, indexy_rbh):
-        """
-        Updates the 'indexy_rbh' dataframe using the 'ind4_om' dataframe.
-        The updates are performed based on the 'indeks' column.
+        Updates the 'indexy_4' dataframe using the 'ind4_om' dataframe based on 'indeks' column.
         """
         self.ind4_om.set_index('indeks', inplace=True)
-        indexy_rbh.update(self.ind4_om)
-        indexy_rbh.reset_index(inplace=True)
-        return indexy_rbh
+        self.indexy_4.set_index('indeks', inplace=True)
+        self.indexy_4.update(self.ind4_om)
+        self.indexy_4.reset_index(inplace=True)
+        self.ind4_om.reset_index(inplace=True)
 
-    def merge_with_indexy_rbh(self, bok):
+    def prepare_ksiazka_k(self):
         """
-        Merges the BOK dataframe with 'indexy_rbh' dataframe on the 'indeks' column.
-        'indexy_rbh' is the dataframe that contains updated data from the 'ind4_om' dataframe.
+        Prepares 'ksiazka_k' dataframe by merging it with 'bok' and 'indexy_4', filtering by calibration devices, and adding necessary columns.
         """
-        indexy_rbh = self.indexy_4[self.indexy_4['indeks'].str.len() == 11][['indeks', 'p_norma_k']]
-        indexy_rbh.set_index('indeks', inplace=True)
-        indexy_rbh = self.update_indexy_rbh(indexy_rbh)
-        return pd.merge(bok, indexy_rbh, how='left', on='indeks')
+        ksiazka_k = pd.merge(self.ksiazka_k[self.columns_to_use_in_ksiazka_k], self.bok, on='bk_id', how='left')
+        ksiazka_k['ium'] = ksiazka_k['indeks'].str[:6]
+        ksiazka_k['indeks_8'] = ksiazka_k['indeks'].str[:8]
 
-    def merge_with_indexy_names(self, bok):
-        """
-        Merges the BOK dataframe with 'indexy_names' dataframe on the 'indeks8' column,
-        which results in a new dataframe with the name column added.
-        """
-        indexy_names = self.indexy_4[self.indexy_4['indeks'].str.len() == 8][['indeks', 'nazwa']]
-        return pd.merge(
-            bok, indexy_names, how='left',
-            left_on='indeks8', right_on='indeks', suffixes=('', '_y')
-        ).drop(columns=['indeks_y'])
+        # Filter for devices for calibration in the specified lab
+        ksiazka_k = ksiazka_k[(ksiazka_k['k_do_k_n'] == 2) & (ksiazka_k['pr_id'] == INDEX_PRACOWNI) & (ksiazka_k['k_do_datap'].isnull())]
 
-    def get_devices_waiting_for_calibration(self):
+        # Merge with 'indexy_4' for additional data
+        ksiazka_k = pd.merge(ksiazka_k, self.indexy_4[['indeks', 'nazwa']], left_on='indeks_8', right_on='indeks', how='left', suffixes=('', '_drop'))
+        ksiazka_k = ksiazka_k.drop(columns=['indeks_drop'])
+        ksiazka_k = pd.merge(ksiazka_k, self.indexy_4[['indeks', 'p_norma_k']], on='indeks', how='left')
+
+        # Add 'dni_w_om' column (days in BOK)
+        today = pd.Timestamp('today').normalize()
+        ksiazka_k['u_data_p'] = pd.to_datetime(ksiazka_k['u_data_p'])
+        ksiazka_k['dni_w_om'] = (today - ksiazka_k['u_data_p']).dt.days
+
+        # Drop unnecessary columns and reorder the dataframe
+        columns_to_drop = ['u_data_p', 'bk_id', 'pr_id', 'k_do_k_n', 'k_do_datap', 'indeks', 'indeks_8']
+        ksiazka_k = ksiazka_k.drop(columns=columns_to_drop)
+        columns_order = ['ium', 'dni_w_om', 'nazwa', 'p_typ', 'p_nr_fab', 'k_uwagi', 'u_nazwa_s', 'k_do_nazw', 'p_norma_k']
+        return ksiazka_k[columns_order]
+
+    def get_devices_in_bok_to_assign(self, ksiazka_k):
         """
-        Returns a dataframe of devices waiting for calibration.
-        This is achieved by preparing the BOK dataframe, merging it with the 'indexy_rbh' dataframe,
-        merging the resultant dataframe with the 'indexy_names' dataframe and selecting specific final columns.
+        Filters devices in BOK to assign based on missing 'k_do_nazw' and excludes rows with certain words in 'k_uwagi'.
         """
-        reduced_bok = self.prepare_reduced_bok()
-        reduced_bok = self.merge_with_indexy_rbh(reduced_bok)
-        reduced_bok = self.merge_with_indexy_names(reduced_bok)
-        final_columns = [
-            'p_ind_rek', 'ium', 'nazwa', 'p_typ', 'p_nr_fab',
-            'p_norma_k', 'u_data_p', 'u_nazwa_s', 'k_do_pesel'
-        ]
-        return reduced_bok[final_columns]
+        devices_in_bok_to_assign = ksiazka_k[ksiazka_k['k_do_nazw'].isnull() | (ksiazka_k['k_do_nazw'] == '')]
+        for word in EXCLUDED_WORDS_LIST:
+            devices_in_bok_to_assign = devices_in_bok_to_assign[~devices_in_bok_to_assign['k_uwagi'].str.contains(word, case=False, na=False)]
+        return devices_in_bok_to_assign
+
+    def get_rbh_for_technician(self, ksiazka_k):
+        """
+        Groups devices by 'k_do_nazw' and sums 'p_norma_k' for each unique 'k_do_nazw' (technician).
+        """
+        rbh_for_pesel = ksiazka_k.groupby('k_do_nazw', as_index=False)['p_norma_k'].sum()
+        rbh_for_pesel = rbh_for_pesel.rename(columns={'p_norma_k': 'sum_p_norma_k'})
+        return rbh_for_pesel.sort_values(by='k_do_nazw', ascending=True)
 
     @staticmethod
     def initialize():
         """
-        Initializes and processes data to return three key dataframes used in the workflow:
-        uncalibrated_devices_in_bok - dataframe of devices waiting for calibration,
-        rbh_for_pesel - summarised dataframe with summed 'p_norma_k' for each unique 'k_do_pesel',
-        devices_in_bok_to_select - dataframe of devices in BOK that need to be selected.
+        Initializes and returns uncalibrated devices, RBH for technicians, and devices to assign.
         """
         processor = DevicesDataProcessor()
-        uncalibrated_devices_in_bok = processor.get_devices_waiting_for_calibration()
-
-        rbh_for_pesel = uncalibrated_devices_in_bok.groupby('k_do_pesel')['p_norma_k'].sum().reset_index()
-        rbh_for_pesel = rbh_for_pesel.sort_values(by='p_norma_k').rename(columns={'p_norma_k': 'selected_rbh'})
-
-        devices_in_bok_to_select = uncalibrated_devices_in_bok[uncalibrated_devices_in_bok['k_do_pesel'].isna()]
-
-        return uncalibrated_devices_in_bok, rbh_for_pesel, devices_in_bok_to_select
+        processor.update_indexy_rbh()
+        uncalibrated_devices_in_bok = processor.prepare_ksiazka_k()
+        rbh_for_pesel = processor.get_rbh_for_technician(uncalibrated_devices_in_bok)
+        devices_in_bok_to_assign = processor.get_devices_in_bok_to_assign(uncalibrated_devices_in_bok)
+        return uncalibrated_devices_in_bok, rbh_for_pesel, devices_in_bok_to_assign
 
 
-# Initialize data
-#uncalibrated_devices_in_bok, rbh_for_pesel, devices_in_bok_to_select = DevicesDataProcessor.initialize()
+class TechnicianDataProcessor:
+    """
+    This class processes technician data including merging, filtering, grouping, and sorting.
+    """
+
+    def __init__(self):
+        self.data_loader = DataLoader(INDEX_PRACOWNI)
+        self.pers_gr = self.data_loader.pers_gr
+        self.pers_st = self.data_loader.pers_st
+
+    def merge_personal_data(self) -> pd.DataFrame:
+        """
+        Merges the personal group dataframe and the state dataframe based on 'l_pesel' (ID).
+        """
+        return pd.merge(self.pers_gr, self.pers_st, how='left', left_on='l_pesel', right_on='l_pesel')
+
+    def filter_technicians(self, merged_data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Filters merged data for technicians with the right status and ID.
+        """
+        return merged_data[(merged_data['pr_id'] == INDEX_PRACOWNI) & (merged_data['ium'].notna()) & (~merged_data['zaw']) & (~merged_data['cof']) & (merged_data['l_status_p'] == 2)]
+
+    def group_technicians(self, filtered_data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Groups technicians by relevant details and aggregates 'ium' data into lists, sorted alphabetically.
+        """
+        grouped_df = filtered_data.groupby(['l_pesel', 'l_nazw_im', 'l_pr_thn', 'pr_id', 'l_norma_p']).agg(
+            iums=('ium', lambda x: sorted(list(x.dropna())))).reset_index()
+
+        self.format_technician_columns(grouped_df)
+        return grouped_df
+
+    def format_technician_columns(self, df: pd.DataFrame) -> None:
+        """
+        Formats 'l_nazw_im', calculates 'rbh_week_plan', and removes unnecessary columns.
+        """
+        df['l_nazw_im'] = df['l_nazw_im'].str.strip()
+        df['rbh_week_plan'] = (df['l_pr_thn'] * df['l_norma_p'] / 1400).apply(np.floor)
+        df.drop(columns=['l_pr_thn', 'l_norma_p'], inplace=True)
+        df = df[['l_nazw_im', 'rbh_week_plan', 'iums']]
+
+    def sort_technicians(self, grouped_data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Sorts technicians by name and removes unnecessary columns.
+        """
+        grouped_data = grouped_data.drop(['pr_id', 'l_pesel'], axis=1)
+        return grouped_data.sort_values(by='l_nazw_im')
+
+    def process_technician_data(self) -> pd.DataFrame:
+        """
+        Processes technician data through merging, filtering, grouping, and sorting.
+        """
+        merged_data = self.merge_personal_data()
+        filtered_data = self.filter_technicians(merged_data)
+        grouped_data = self.group_technicians(filtered_data)
+
+        # Ensure the 'iums' are always sorted after processing.
+        grouped_data['iums'] = grouped_data['iums'].apply(sorted)
+
+        return self.sort_technicians(grouped_data)
+
+    @staticmethod
+    def initialize():
+        """
+        Initializes and processes technician data to return the final dataframe.
+        """
+        processor = TechnicianDataProcessor()
+        return processor.process_technician_data()
+
+def get_technician_and_device_data(use_archive_data=False):
+    """
+    Initializes and returns both technicians and devices in BOK to assign.
+    Uses archived CSV data if 'use_archive_data' is set to True.
+    """
+    csv_dir = 'CSV_files'
+    technicians_csv_path = os.path.join(csv_dir, 'technicians.csv')
+    devices_csv_path = os.path.join(csv_dir, 'devices_in_bok_to_assign.csv')
+
+    if use_archive_data and os.path.exists(technicians_csv_path) and os.path.exists(devices_csv_path):
+        # Load archived data
+        technicians = pd.read_csv(technicians_csv_path)
+        devices_in_bok_to_assign = pd.read_csv(devices_csv_path)
+
+        # Convert 'iums' column back to list format and sort them
+        technicians['iums'] = technicians['iums'].apply(ast.literal_eval).apply(sorted)
+    else:
+        # Get uncalibrated devices, RBH for technicians, and devices to assign
+        uncalibrated_devices_in_bok, assigned_rbh_for_technician, devices_in_bok_to_assign = DevicesDataProcessor.initialize()
+
+        # Initialize technicians
+        technicians = TechnicianDataProcessor.initialize()
+
+        # Merge technicians with RBH data
+        technicians = pd.merge(technicians, assigned_rbh_for_technician, how='left', left_on='l_nazw_im', right_on='k_do_nazw')
+        technicians['sum_p_norma_k'] = technicians['sum_p_norma_k'].fillna(0)
+
+        # Reorganize columns and clean up
+        technicians = technicians.drop('k_do_nazw', axis=1)
+        iums_column = technicians.pop('iums')
+        technicians['iums'] = iums_column.apply(sorted)  # Sort 'iums' alphabetically
+        technicians = technicians.rename(columns={'l_nazw_im': 'technician', 'rbh_week_plan': 'rbh_do_zaplanowania', 'sum_p_norma_k': 'rbh_przydzielone'})
+
+        # if all rbh are assigned 'rbh_do_zaplanowania' =0
+        technicians['rbh_do_zaplanowania'] = (technicians['rbh_do_zaplanowania'] - technicians['rbh_przydzielone']).clip(lower=0)
+
+        # Rename and sort devices to assign
+        devices_in_bok_to_assign = devices_in_bok_to_assign.rename(columns={'p_typ': 'typ', 'p_nr_fab': 'nr_fabryczny', 'u_nazwa_s': 'uzytkownik', 'k_do_nazw': 'technician', 'p_norma_k': 'rbh_norma'})
+        devices_in_bok_to_assign = devices_in_bok_to_assign.drop('k_uwagi', axis=1).sort_values(by='dni_w_om', ascending=False)
+
+        # Save data to CSV for future use
+        if not os.path.exists(csv_dir):
+            os.makedirs(csv_dir)
+        technicians.to_csv(technicians_csv_path, index=False)
+        devices_in_bok_to_assign.to_csv(devices_csv_path, index=False)
+
+    return technicians, devices_in_bok_to_assign
+
 
 if __name__ == '__main__':
-    #print(f'\nUncalibrated Devices in BOK:\n{uncalibrated_devices_in_bok}')
-    #print(f'\nRBH for PESEL:\n{rbh_for_pesel}')
-    #print(f'\nDevices in BOK to Select:\n{devices_in_bok_to_select}')
+    # Change to True to use archived data for faster testing
+    technicians, devices_in_bok_to_assign = get_technician_and_device_data(use_archive_data=False)
 
-    columns_to_use_in_ksiazka_k = ['bk_id', 'pr_id', 'p_nr_fab', 'p_typ', 'u_nazwa_s', 'k_do_k_n', 'k_do_nazw', 'k_do_datap', 'k_uwagi', 'indeks',
-                                #   'k_bk_data', 'k_data_sp', 'k_do_data'
-                                   ]
-
-    data_loader = DataLoader()
-    indexy_4 = data_loader.indexy_4
-    ind4_om = data_loader.ind4_om[['indeks', 'p_norma_k']]
-
-    bok = data_loader.bok[['bk_id', 'u_data_p']]
-    ksiazka_k = data_loader.ksiazka_k[columns_to_use_in_ksiazka_k]
-
-    # Dopasowanie danych z 'bok' do 'ksiazka_k' na podstawie 'bk_id' w celu dodania daty przyjęcia do BOK
-    ksiazka_k = pd.merge(ksiazka_k, bok, on='bk_id', how='left')
-    ksiazka_k['ium'] = ksiazka_k['indeks'].str[:6]
-    ksiazka_k['indeks_8'] = ksiazka_k['indeks'].str[:8]  # need for name
-
-
-####################################################################
-    # Aktualizacja tabeli 'indexy_4' za pomocą danych z 'ind4_om'
-    ind4_om.set_index('indeks', inplace=True)  # Ustaw indeks na kolumnę 'indeks'
-    indexy_4.set_index('indeks', inplace=True)  # Ustaw indeks na kolumnę 'indeks'
-
-    # Aktualizacja tabeli 'indexy_4' na podstawie danych z 'ind4_om'
-    indexy_4.update(ind4_om)
-
-    # Przywrócenie indeksów do domyślnej postaci
-    indexy_4.reset_index(inplace=True)
-    ind4_om.reset_index(inplace=True)
-
-    # Wyświetlenie zaktualizowanej tabeli 'indexy_4'
-    print(f'\nZaktualizowana tabela indexy_4:\n{indexy_4.head()}')
-#################################################################
-#    wybierz tylko przyrządy do kalibracji w bok
-
-    ksiazka_k=ksiazka_k[
-        (ksiazka_k['k_do_k_n'] == 2)   # tylko przyrządy do kalibracji
-        & (ksiazka_k['pr_id'] == INDEX_PRACOWNI)
-        #(ksiazka_k['k_do_data'] > '1900-01-01') &
-        #& (ksiazka_k['k_do_datap'] < '1900-01-01')
-        & (ksiazka_k['k_do_datap'].isnull())
-        ]
-
-
-
-################################################
-
-    ksiazka_k = pd.merge(ksiazka_k, indexy_4[['indeks','nazwa']], left_on='indeks_8', right_on='indeks', how='left', suffixes=('', '_drop'))
-
-    # Usunięcie dodatkowej kolumny 'indeks', jeśli nie jest potrzebna
-    ksiazka_k = ksiazka_k.drop(columns=['indeks_drop'])
-
-    ksiazka_k = pd.merge(ksiazka_k, indexy_4[['indeks','p_norma_k']],on='indeks', how='left')
-
-
-    column_name='pr_id' #'k_do_datap' 'pr_id'
-    # Zliczanie wartości i sortowanie rosnąco
-    sorted_value_counts = ksiazka_k[column_name].value_counts().sort_values(ascending=True)
-
-    # Wyświetlanie całej tabeli
-    print(sorted_value_counts)
-
-    # Wyświetlanie minimalnej i maksymalnej wartości
-    print(f"Min: {ksiazka_k[column_name].min()}")
-    print(f"Max: {ksiazka_k[column_name].max()}")
-
-    # Dodanie kolumny 'dni_w_om', która wylicza liczbę dni między dzisiejszą datą a 'u_data_p'
-    today = pd.Timestamp('today').normalize()  # Pobieranie dzisiejszej daty bez godziny
-    ksiazka_k['u_data_p'] = pd.to_datetime(ksiazka_k['u_data_p'])  # Konwersja kolumny 'u_data_p' na typ daty
-    ksiazka_k['dni_w_om'] = (today - ksiazka_k['u_data_p']).dt.days  # Wyliczanie różnicy w dniach
-
-    columns_to_drop=['u_data_p','bk_id','pr_id','k_do_k_n','k_do_datap','indeks','indeks_8']
-    ksiazka_k=ksiazka_k.drop(columns=columns_to_drop)
-    columns_order=['ium','dni_w_om','nazwa','p_typ','p_nr_fab','k_uwagi','u_nazwa_s','k_do_nazw','p_norma_k']
-
-    devices_uncalibrated_in_bok = ksiazka_k[columns_order].copy()
-
-    print(devices_uncalibrated_in_bok.head())
-    print(devices_uncalibrated_in_bok.info())
-
-
-    # find devices_in_bok_to_select
-    devices_in_bok_to_select = devices_uncalibrated_in_bok[
-        devices_uncalibrated_in_bok['k_do_nazw'].isnull() | (devices_uncalibrated_in_bok['k_do_nazw'] == '')
-        ]
-
-    # Wykluczanie wierszy, w których kolumna 'k_uwagi' zawiera słowa z listy EXCLUDED_WORDS_LIST
-    for word in EXCLUDED_WORDS_LIST:
-        devices_in_bok_to_select = devices_in_bok_to_select[
-            ~devices_in_bok_to_select['k_uwagi'].str.contains(word, case=False, na=False)
-        ]
-
-    print(devices_in_bok_to_select.head())
-
-    # find rbh_for_pesel
-
-    # Grupowanie wierszy dla kolumny 'k_do_nazw' i sumowanie wartości w kolumnie 'p_norma_k'
-    rbh_for_pesel = devices_uncalibrated_in_bok.groupby('k_do_nazw', as_index=False)['p_norma_k'].sum()
-
-    # Zmiana nazwy kolumny z zsumowanymi wartościami na 'sum_p_norma_k'
-    rbh_for_pesel = rbh_for_pesel.rename(columns={'p_norma_k': 'sum_p_norma_k'})
-
-    # Sortowanie wynikowego DataFrame rosnąco po kolumnie 'k_do_nazw'
-    rbh_for_pesel = rbh_for_pesel.sort_values(by='k_do_nazw', ascending=True)
-
-    # Wyświetlenie posortowanych danych
-    print(rbh_for_pesel.head())
+    # Display results
+    print(f'\nTechnicians:\n{technicians.head()}')
+    print(f'\nDevices in BOK to Assign:\n{devices_in_bok_to_assign.head()}')

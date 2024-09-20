@@ -151,11 +151,13 @@ def convert_columns_to_date(df: DataFrame, date_columns_list: list, datetime_col
 
 if __name__ == '__main__':
     try:
-        dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\ksiazka_k.DBF'
+        #dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\ksiazka_k.DBF'
+        dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\indexy_4.DBF'
         df_example = parse_ODBC_to_df(dbase_file_path_example, remove_csv_after_read=True)
 
         print(df_example.head())
         print(df_example.info())
+        print(df_example.describe())
     except Exception as e:
         print("Główna część programu nie powiodła się:", e)
         raise
