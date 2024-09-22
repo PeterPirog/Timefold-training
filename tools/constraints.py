@@ -5,6 +5,7 @@ from domain import Device, Technician
 def define_constraints(constraint_factory: ConstraintFactory):
     return [
         # HARD constraints
+        #technician_capacity_hard(constraint_factory),
         technician_capacity_hard(constraint_factory),
         technician_skill_conflict(constraint_factory),
 
@@ -24,41 +25,21 @@ def technician_skill_conflict(constraint_factory: ConstraintFactory):
             .penalize(HardSoftScore.ONE_HARD)
             .as_constraint("Technician skill conflict"))
 
-
-def technician_capacity_hard2(constraint_factory: ConstraintFactory):
+def technician_capacity_hard(constraint_factory: ConstraintFactory):
     """
-    Penalizuje, jeśli całkowita suma rbh_norma urządzeń przypisanych do technika przekracza jego dostępne godziny do zaplanowania.
+    Penalizuje, jeśli technik ma przydzielone wiecej rbh niż jego limit rbh_do_zaplanowania
     """
     return (constraint_factory
             .for_each(Device)
-            .join(Technician, Joiners.equal(lambda device: device.technician, lambda technician: technician))
-            .group_by(lambda device, technician: technician,  # Grupowanie po techniku
-                      ConstraintCollectors.sum(lambda device: device.rbh_norma))  # Sumowanie rbh_norma dla technika
-            .filter(lambda technician, total_rbh_norma: total_rbh_norma > technician.rbh_do_zaplanowania)  # Filtr przekroczenia limitu godzin
-            .penalize(HardSoftScore.ONE_HARD,
-                      lambda technician, total_rbh_norma: total_rbh_norma - technician.rbh_do_zaplanowania)  # Kara proporcjonalna do przekroczenia limitu
+            .filter(lambda device: device.technician is not None)
+            .group_by(lambda device: device.technician, ConstraintCollectors.sum(lambda device: device.rbh_norma))
+            .filter(lambda technician, total_rbh_norma: total_rbh_norma > technician.rbh_do_zaplanowania)
+            .penalize(HardSoftScore.ONE_HARD)
             .as_constraint("Technician capacity (hard constraint)"))
+###############################################
 
-def technician_capacity_hard1(constraint_factory: ConstraintFactory):
-    return (
-        constraint_factory.for_each(Device)
-        .group_by(lambda device: device.technician, ConstraintCollectors.sum(lambda device: device.rbh_norma))
-        .filter(lambda technician, total_rbh_norma: total_rbh_norma > technician.rbh_do_zaplanowania)
-        .penalize(HardSoftScore.ONE_HARD, lambda technician, total_rbh_norma: total_rbh_norma - technician.rbh_do_zaplanowania)
-        .as_constraint("Technician capacity")
-    )
-def technician_capacity_hard(constraint_factory: ConstraintFactory):
-    def technician_rbh_exceeded(technician, total_rbh_norma):
-        print(f"Technician: {technician.name}, Total RBH: {total_rbh_norma}, Do zaplanowania: {float(technician.rbh_do_zaplanowania)}")
-        return total_rbh_norma > technician.rbh_do_zaplanowania
+######################################################
 
-    return (
-        constraint_factory.for_each(Device)
-        .group_by(lambda device: device.technician, ConstraintCollectors.sum(lambda device: device.rbh_norma))
-        .filter(technician_rbh_exceeded)
-        .penalize(HardSoftScore.ONE_HARD, lambda technician, total_rbh_norma: total_rbh_norma - technician.rbh_do_zaplanowania)
-        .as_constraint("Technician capacity")
-    )
 def assign_technician_soft_constraint(constraint_factory: ConstraintFactory):
     """
     Nagroda za przypisanie urządzeń do jak największej liczby przyrządów.
