@@ -111,7 +111,7 @@ if __name__ == '__main__':
                 constraint_provider_function=define_constraints  # Włączanie ograniczeń
             ),
             termination_config=TerminationConfig(
-                best_score_limit="0hard/978soft",  # Solver będzie dążył do osiągnięcia wyższej jakości rozwiązania.
+                #best_score_limit="0hard/978soft",  # Solver będzie dążył do osiągnięcia wyższej jakości rozwiązania.
                 spent_limit=Duration(minutes=4*60)
             )
         )

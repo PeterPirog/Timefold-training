@@ -151,13 +151,30 @@ def convert_columns_to_date(df: DataFrame, date_columns_list: list, datetime_col
 
 if __name__ == '__main__':
     try:
-        #dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\ksiazka_k.DBF'
+        # dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\ksiazka_k.DBF'
         dbase_file_path_example = r'G:\PycharmProject\Timefold-training\Logis\DANE\indexy_4.DBF'
         df_example = parse_ODBC_to_df(dbase_file_path_example, remove_csv_after_read=True)
 
         print(df_example.head())
         print(df_example.info())
         print(df_example.describe())
+
+        # Remove spaces and calculate the length of 'indeks' strings
+        df_example['indeks_length'] = df_example['indeks'].str.replace(" ", "").str.len()
+
+        # Count rows with specific lengths: 2, 4, 6, 8, and 11
+        count_2_char_rows = df_example[df_example['indeks_length'] == 2].shape[0]
+        count_4_char_rows = df_example[df_example['indeks_length'] == 4].shape[0]
+        count_6_char_rows = df_example[df_example['indeks_length'] == 6].shape[0]
+        count_8_char_rows = df_example[df_example['indeks_length'] == 8].shape[0]
+        count_11_char_rows = df_example[df_example['indeks_length'] == 11].shape[0]
+
+        print(f"Liczba dziedzin: {count_2_char_rows}")
+        print(f"Liczba grup: {count_4_char_rows}")
+        print(f"Liczba podgrup: {count_6_char_rows}")
+        print(f"Liczba nazw: {count_8_char_rows}")
+        print(f"Liczba typów: {count_11_char_rows}")
+
     except Exception as e:
         print("Główna część programu nie powiodła się:", e)
         raise

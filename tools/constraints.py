@@ -12,6 +12,7 @@ def define_constraints(constraint_factory: ConstraintFactory):
         # SOFT constraints
         assign_technician_soft_constraint(constraint_factory),
         #prioritize_earlier_deliveries(constraint_factory),
+        assign_technician_soft_constraint_dni_om(constraint_factory),
     ]
 
 
@@ -68,3 +69,16 @@ def days_until_delivery(dni_w_om: int) -> int:
     Oblicza liczbę dni od dostawy, im większa liczba dni, tym wyższy priorytet (starsze urządzenia mają wyższy priorytet).
     """
     return dni_w_om
+def assign_technician_soft_constraint_dni_om(constraint_factory: ConstraintFactory):
+    """
+    Nagroda za przypisanie urządzeń do techników, gdzie nagroda wynika z minimalnej wartości 'dni_w_om'
+    dla urządzeń mających przypisanego technika.
+    """
+    return (constraint_factory
+            .for_each(Device)
+            .filter(lambda device: device.technician is not None)  # Urządzenie ma przypisanego technika
+            .group_by(lambda device: device.technician,  # Grupowanie po technikach
+                      ConstraintCollectors.min(lambda device: device.dni_w_om))  # Zbieranie minimalnej wartości dni_w_om
+            .reward(HardSoftScore.ONE_SOFT,
+                    lambda technician, min_dni_w_om: min_dni_w_om)  # Nagroda równa minimalnej wartości dni_w_om
+            .as_constraint("Assign technician to devices based on minimum dni_w_om"))
